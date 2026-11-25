@@ -76,17 +76,13 @@ In the current deployment, restarting IBKR requires manual intervention using a 
 
 Browse the [screenshot gallery](docs/screenshots.md) for group dashboards, technicals, fundamentals, macro context, postcheck, and the duty loop.
 
-## Next: from a research dashboard to portfolio decisions
+## Beyond the dashboard: personal portfolio planning
 
-The current dashboard provides neutral research. As the watchlist approaches 100 assets, even reading every final report becomes difficult for one person. The next major step is a capable AI that reads both the user's holdings and the research reports, treats those reports as high-confidence inputs, and produces a portfolio rebalancing plan. This design rests on the reports being sufficiently reliable.
+The public dashboard provides neutral research across **data → events → pricing → action plans**. Turning those outputs into a personal rebalancing plan requires another layer that accounts for each person's holdings and circumstances. As the watchlist approaches 100 assets, even reading every final report becomes difficult for one person.
 
-Today, rebalancing decisions are discussed with the AI. The intended progression is:
+A separate portfolio layer is therefore being explored: a capable AI would read holdings and research reports, use the reports as high-confidence inputs, and propose portfolio adjustments. This design assumes the reports are sufficiently reliable. The longer-term direction is to progress from discussing plans with the AI, through systematic execution of agreed plans, toward AI-driven execution.
 
-1. **Discuss the plan.** Work through proposed changes with the AI and settle on a plan.
-2. **Execute systematically.** Gradually move toward routine execution of agreed plans.
-3. **Automate execution.** Eventually let the AI carry out portfolio changes automatically.
-
-This portfolio layer is a development direction; automated trading is not an available feature of the current public release.
+**Parts of this layer have already been designed in the main project, but the design is still immature and depends on private server URLs and interfaces. It is not being published at present.** This section only introduces the plan; personal rebalancing and automated execution are outside the current public release.
 
 ## Design principles
 
@@ -184,17 +180,13 @@ Equipoise 是一个基于大语言模型、用于量化市场分析的多智能�
 
 [截图画廊](docs/screenshots.md) 展示了分组看板、技术面、基本面、宏观环境、后验复盘与值班调度。
 
-## 下一步：从研究看板到组合决策
+## 看板之外：个人调仓计划
 
-当前看板提供中立研究。随着关注标的接近 100 个，连逐份阅读最终报告，对一个人来说都开始吃力。接下来一个重要方向，是让能力更强的 AI 同时读取自己的持仓与研究报告，将报告作为高可信输入，输出组合层面的调仓计划。这一设计以报告足够可靠为前提。
+公共看板提供中立研究，覆盖 **数据 → 事件 → 定价 → 操作方案**。具体到每个人如何调仓，还需要结合各自持仓与实际情况的另一层。随着关注标的接近 100 个，连逐份阅读最终报告，对一个人来说都开始吃力。
 
-目前的方式是与 AI 商量调仓，计划逐步走向：
+因此，另一个正在探索的方向，是让能力更强的 AI 同时读取持仓与研究报告，将报告作为高可信输入，提出组合层面的调整建议。这一设计以报告足够可靠为前提，长期方向是从与 AI 讨论方案，逐步走向按认可的计划机械执行，再进一步探索 AI 自动执行。
 
-1. **讨论方案。** 与 AI 一起推敲调整建议，形成认可的计划。
-2. **按计划执行。** 逐步减少临场反复讨论，过渡到按既定计划机械执行。
-3. **自动执行。** 最终让 AI 自动完成组合调整。
-
-这一组合层属于后续发展方向，自动交易尚不是当前公开版本具备的功能。
+**主工程已经有这一层的部分设计，但目前尚不成熟，也涉及私有服务器 URL 与接口，因此暂不公开。** 这里仅介绍这项计划；个人调仓与自动执行均不属于当前公开版本的交付范围。
 
 ## 设计原则
 
