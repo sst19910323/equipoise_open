@@ -20,6 +20,8 @@ Role cards and an excerpt from the opening statement, not a complete round. The 
 
 [Captured transcript / 截取的辩论记录](../images/screenshots/debate-unh-zh.png)
 
+The README also shows [Reaper's opening paragraph](../images/screenshots/debate-reaper-opening-en.png) and [a numbered evidence citation in Zealot's argument](../images/screenshots/debate-evidence-citation-en.png). These are separate excerpts from the same shared hearing; the long capture stops partway through the debate. / README 另展示 [Reaper 的开场段落](../images/screenshots/debate-reaper-opening-en.png)与 [Zealot 论点中的编号证据引用](../images/screenshots/debate-evidence-citation-en.png)。它们是同场听证的不同节选，长截图在辩论中途结束。
+
 ## Alternative plans / 备选方案
 
 ![Two alternative plans and downside protection](../images/screenshots/decision-cards-unh-en.png)
@@ -35,6 +37,8 @@ Terminal and path-dependent plans are alternatives, not sequential steps or comb
 | Technicals / 技术面 | [UNH](../images/screenshots/technicals-unh-en.png) | [UNH](../images/screenshots/technicals-unh-zh.png) |
 | Macro / 宏观 | [US](../images/screenshots/macro-us-en.png) | [美国](../images/screenshots/macro-us-zh.png) |
 | Fundamentals / 基本面 | — | [MSFT](../images/screenshots/fundamentals-msft-zh.png) |
+
+Compact panels used in the README: [technicals](../images/screenshots/data-technicals-unh-en.png), [fundamentals](../images/screenshots/data-fundamentals-msft-zh.png), [macro](../images/screenshots/data-macro-us-en.png). / 正文使用了保留原始像素的技术结构、基本面与宏观面板裁片。
 
 ## Postcheck / 后验复盘
 
@@ -56,5 +60,11 @@ This is one case: its D+3 review is available and D+20 is still pending in the c
 Hermes wakes Codex or Claude Code to refresh company and broader-market fundamentals, and wakes Codex for stock analysis. It coordinates Codex instances by remaining usage allowance; Codex decides which stocks to run. / Hermes 适时唤起 Codex 或 Claude Code 更新公司与大盘基本面，并唤起 Codex 跑股票；它按剩余 usage 协调 Codex 实例，最终跑哪些股票由 Codex 决定。
 
 [English duty view](../images/screenshots/duty-loop-en.png) · [中文值班视图](../images/screenshots/duty-loop-zh.png)
+
+## Cyber sign-off / 赛博签章
+
+[Final dissent and the two seals / 最终异议与两枚印章](../images/screenshots/cyber-signoff-unh-en.png)
+
+Captured directly from the live debate page's sign-off section, which was beyond the end of the original long screenshot. Both advocates retain their reservations. The old Apex Quant seals are an in-project joke. / 原长截图未截到签章区，此图直接截取看板的真实签章区域。两位辩手各自保留异议，旧名 Apex Quant 印章属于项目内的趣味设计。
 
 [Back to README / 返回 README](../README.md)
