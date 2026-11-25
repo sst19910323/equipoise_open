@@ -1,232 +1,102 @@
+<a id="english"></a>
+
 **English** | [**中文**](#中文版)
 
 # ⚖️ Equipoise（均势）
 
-### Adversarial Multi-Agent Debate Framework for Quantitative Analysis
+**Market research through evidence, adversarial debate, and reviewed improvement.**
 
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
-> **Formerly Apex Quant.** On 2026-10-17 the project took its real name — **Equipoise**, balance under hard contention — and this public mirror became `equipoise_open`. The old name, the old address and the old paper are kept as [easter eggs](#easter-eggs) at the bottom.
+Equipoise is an LLM-based multi-agent framework for quantitative market analysis. Opposing advocates examine the same evidence, challenge each other's reasoning, and submit their claims to an arbiter. The result is an inspectable research record: price scenarios, alternative action plans, and the reasoning behind them.
 
----
+## How to run
 
-Equipoise is an LLM-based multi-agent framework for quantitative analysis. Before any decision is emitted, agents holding **opposing stances** must complete a structured debate. Most multi-agent trading frameworks split agents by **data type** (fundamentals, sentiment, technicals); Equipoise splits them by **stance**. The framework is market-agnostic; the current implementation covers US / EU / JP / KR equities.
+**Setup guide: in preparation.** The current rules, formulas, models, and code are still being prepared for publication. This README describes the current system and its drill plan; the screenshots come from a running private instance. They are not a demonstration of what a fresh clone of this repository can run today.
 
-> **🎯 November 2026 — the drill plan.** The current focus is inspecting how a judgment develops, round by round: what information the agents seek, how evidence changes their views, and where a useful judgment gets lost. The [drill plan](#drill-plan) below explains the approach and shows the first experiment's branching history.
->
-> **Release preparation.** The design details, formulas, models and current code are being organized for publication together. This update brings the README up to date on the drill plan; it does not release a new implementation. The runnable reference code here remains the archived **v1**.
+The available reference implementation is **v1**: see its [setup instructions](README-v1.md) and [frozen code](https://github.com/sst19910323/equipoise_open/tree/v1). It implements an earlier architecture.
 
-> **What this README describes.** The body below still describes the **v2 edition** as it last ran — two advocates + an arbiter, backed by Postgres and run agent-natively; the v3 write-up arrives together with the code. The original three-debater, file-based v1 is archived in [`README-v1.md`](README-v1.md) and frozen on the [`v1` branch](../../tree/v1).
->
-> **→ Read the [Design Philosophy / 设计哲学](docs/design-philosophy.md)** (bilingual) for the whole story — including *why* v1 became v2, and why v2 is now being rebuilt.
+The planned entry point is to let **Codex or Claude Code initialize the project**, with guidance for database setup, Hermes (monitoring and agent wake-ups), and worker instances. Those instructions are still being assembled. It has become complicated enough that even getting it organized, initialized, and synchronized is a job for an agent.
 
-> **Language note:** from **2026-10-26** the system's working language is **English** — rules, debate transcripts, final reports and post-mortem verdicts are written in English and stored as the source of truth; Chinese and other languages are rendered from them by a translation step, for reports and verdicts only (the debate itself is not translated). Everything produced before that date is Chinese-only and stays as it is.
+## How it works
 
----
+![Equipoise: shared evidence, opposing advocates, per-asset reports, and an improvement loop](images/system-overview-en.png)
+
+*A conceptual overview of the current system. A shared hearing produces separate asset reports. The improvement loop represents reviewed changes to rules and models.*
+
+### 1. A shared view of the market
+
+Prices and technical structure, fundamentals and events, news and macro conditions form a shared snapshot. During a hearing, agents can request data, searches, or model calculations to resolve a specific question. Findings are available to both sides, including findings that weaken the requester's case.
+
+**Interactive Brokers (IBKR) is the primary data source in the current setup, supplemented by the agents' own web searches.** IBKR was chosen for its cost-effectiveness, but its legacy client workflow and limited practical concurrency require locks and request queues to keep multiple agents' calls from interfering with each other.
+
+If you have a better-suited data source, ask an agent to adapt the data-access layer to use it, checking the data definitions and request handling as part of the change.
+
+### 2. Opposing cases, accountable judgments
+
+**Zealot** develops the optimistic case. **Reaper** is a profit-taking realist, testing whether the opportunity still justifies its risks. **Arbiter** examines the claims and disputes, then issues a reasoned ruling. Evidence can support a decisive conclusion; agreement or a midpoint is not the goal.
+
+A group of related assets can share a hearing while retaining separate conclusions for each asset and analytical lens. The record keeps the arguments, evidence requests, revisions, and dissent available for inspection.
+
+![Role cards and an excerpt from the opening of a shared hearing](images/screenshots/debate-unh-opening.png)
+
+*Role cards and an opening excerpt from a healthcare-group hearing. [View the captured transcript](images/screenshots/debate-unh-zh.png). Debate text remains in its original English even when the dashboard interface is Chinese.*
+
+### 3. From a judgment to explicit alternatives
+
+Each asset's report connects its reasoning to price scenarios and two alternative plans: a **terminal plan**, evaluated at its target horizon, and a **path-dependent plan**, whose conditions matter along the way. These are alternatives to choose between, not sequential instructions or positions to add together. A separate downside-protection assessment addresses a particular instrument or risk lens.
+
+![Terminal and path-dependent plans alongside a downside-protection assessment](images/screenshots/decision-cards-unh-en.png)
+
+*An example of how alternatives are expressed. These are research outputs, not automatically placed orders.*
 
 <a id="drill-plan"></a>
 
-## 🎯 The drill plan: fewer runs, deeper inspection
+### 4. BP / the drill plan
 
-The rulebook kept growing, but a post-mortem score often couldn't tell us which manual an agent should have reached for, why it hadn't, or where its reasoning went wrong. So we began **drills**: choose a few representative historical moments, freeze the information available then, and let independent agents replay the debate one round at a time. The director can know the outcome; the debaters and their evidence replies must stay within what was knowable at the time. Reconstructing that boundary is itself part of the work.
+**BP (a backpropagation analogy) is the system's feedback-and-revision process, organized around drills.** Its purpose is to find where a judgment goes wrong, improve the general rules or models behind it, and test whether the change holds up elsewhere.
 
-Each round follows a loop: build a defensible reference argument from the frozen material, compare it with what the agents actually did, revise the general mechanism, then rerun. **The reference argument stays with the reviewers. The agents must produce their own next attempt.** A stronger model's answer is also open to scrutiny.
+Postcheck compares archived reports with subsequent market outcomes at defined windows, including D+3 and D+20. Scores and cross-case statistics help identify patterns worth investigating. Drills can start from those findings or from a selected historical question. The plan follows four steps:
 
-The first drill made the value of this painfully clear. Asking the agents to explain the market's recent moves helped Reaper identify downside risk in round one; over the next two rounds, concessions pushed it past Zealot into an even more optimistic view. Finding the risk and preserving a justified judgment were two separate problems. Following the branches exposed how partial refutations became excessive concessions, and how arbitration treated continuation and change differently.
+1. **Freeze the case.** Reconstruct the information available at a historical moment, then audit the agents' inputs and evidence replies for later information that should be excluded.
+2. **Inspect the reasoning.** Replay the hearing with independent roles; examine what each round sought, established, challenged, or lost. Reviewers build a reference argument from the same historical information and keep it outside the agents' context.
+3. **Revise and rerun.** Adjust a general rule or model, then rerun from a clean context. The agents must arrive at their own answer.
+4. **Check beyond the case.** Test other dates, market conditions, and held-out cases before accepting a change. Process quality, forecast quality, and action outcomes each need evidence.
 
-**Drills find the fault; statistics check whether it recurs.** Changes must also face later dates, rising and sideways markets, and windows kept out of the tuning process. We record findings, look for corroborating cases, and leave observation periods between changes. Better process behavior, better forecasts and better execution outcomes each need their own evidence.
+The current focus is making this drill process explicit and reproducible. Humans and agents review proposed changes before adoption; BP here concerns the system's rules and models, not neural-network weight training.
 
-<details>
-<summary>🧪 <b>First drill walkthrough — November 7–9, 2026 (Chinese diagram; click to expand)</b></summary>
+### 5. Keeping the research current
 
-![First Equipoise drill: round-by-round branches, corrections and reruns](images/drill-tree-2026-11-09.png)
+**Hermes monitors conditions, wakes agents, and coordinates worker instances.** It checks event schedules and the availability of Interactive Brokers (IBKR), fetches prices through IBKR, and calculates price deviations against stored results. These checks support two main duties:
 
-[Open the full-size diagram](images/drill-tree-2026-11-09.png). This is the historical record of the first drill through v3.6, including failed branches and revised acceptance criteria. Its model names and deployment labels refer to that experiment.
+- At appropriate times, ask **Codex or Claude Code** to update company fundamentals and the broader market's fundamental context.
+- At appropriate times, wake **Codex** to run stock analysis. Hermes coordinates multiple Codex instances, preferring the one with the most remaining usage allowance; **Codex makes the final decision about which stocks to run**.
 
-</details>
+In the current deployment, restarting IBKR requires manual intervention using a phone. While IBKR is unavailable, Hermes pauses wake-ups for stock debates. The public initialization guide for this arrangement is still in preparation.
 
-The immediate publication plan is to explain this work first. **Design details, formulas, models and code are still being organized together.** The public implementation remains v1; a future release will include the setup guidance needed for Codex or Claude Code to initialize it.
+Browse the [screenshot gallery](docs/screenshots.md) for group dashboards, technicals, fundamentals, macro context, postcheck, and the duty loop.
 
----
+## Design principles
 
-<a id="v3-rebuild"></a>
+### Natural layers
 
-## 🚧 October 2026: the v3.0 rebuild
+Evidence, judgment, plan formulation, evaluation, and scheduling belong in the layers suited to their jobs. Clear responsibilities and interfaces let each layer evolve without absorbing the others.
 
-![v3 flow](images/flowchart-v3.png)
+### Thin yet sturdy
 
-**Why now.** Nobody designed this system top-down. It grew: an ensemble one day, role stances the next, then evidence and task split into two layers, then principles separated from playbooks. What came out is clearly layered but rough — and patching it further had stalled: round after round of surgery left the post-mortem average in the same 70 band. A rough shape that already exists is exactly what makes a real top-level design possible for the first time (the 🪴 entry in the [design philosophy](docs/design-philosophy.md) is about this). So instead of another patch, the whole rule corpus and its orchestration are being **rebuilt**: the old version is tagged, its last production batch (2026-09-29) is the baseline, and the target is a post-mortem average above 80.
+Use a compact set of skills (reusable instruction modules) and remove redundant machinery while aiming to cover market mechanisms and models without leaving important analytical angles out. Simplicity must preserve the analytical capabilities needed across different situations, with gaps actively sought and repaired.
 
-**How.** As a consultation between two AIs. Claude Code and GPT Codex each drafted a plan independently, reviewed the other's, and I ruled on the disagreements.
+### Symmetric standards
 
-**What changes.**
+Across every skill, evidence request, and adjudication, competing claims face equivalent standards. All actions—including buying, reducing, holding, waiting, and hedging—must compete fairly on their evidence, without a structural preference for any action. Balance comes from a fair contest, not a forced compromise.
 
-- **One judgment chain, shared by all three roles** — facts → market understanding (what is already priced in, the odds, the short-term path) → mentality → operation → composite score. Everything is generated bottom-up along it; the score comes last instead of being argued backwards from.
-- **Roles restated.** Zealot is the optimist and Reaper the realist who takes profit — not "bull" and "bear." Their *appetites* may be asymmetric; the burden of proof, the standing of evidence and the ruling criteria must be symmetric. The Arbiter is a **pricer** with two symmetric ways to fail: going to extremes, and splitting the difference.
-- **A turn is a cited report, built in beats.** Within a round each debater takes as many beats as it needs — ask for data, a search or a model call, read the receipts, then file a final draft. Only final drafts carry into the next round.
-- **The Arbiter stays silent on substance while the two sides argue.** It then publishes a draft ruling, takes one or two rounds of objections aimed at specific errors, re-finalizes, and both sides sign off with their dissent.
-- **A pricing chain with a shared reference ruler** — roughly, net expected move over a reference range — so the three parties disagree about *inputs*, not about scales. A move is "what should now be counted, minus what was already counted": repeating settled evidence moves nothing, and winning an argument earns no points by itself.
-- **Evidence reported as it is.** Confirmed, refuted, partly true and not found are all normal results. Verification applies to factual claims and states its scope; a forecast is argued on the ledger, never "verified."
-- **One rule tree, one protocol.** Principles are always loaded; model manuals load on demand; a single orchestration protocol and a step-driven script are shared by both engines, behind one factory gate.
-- **Plain names.** The confidence dial becomes a *composite score*, a task a *model call*, a playbook a *model manual*, and so on. The body of this README still uses the v2 vocabulary; it is rewritten with the code release.
+### Reasons and measures
 
-**The risk I watch hardest** is the one the 🧩 entry describes: a big refactor silently dropping load-bearing rules. So the rebuild came with a line-by-line loss audit of roughly a thousand rule rows. Very little was lost outright, but about a tenth came through weakened — and almost always the same half of a paired rule: the constraint survived, the encouragement to act did not. Those are being restored one by one. The standard is that v3.0 must be *fuller* than the old version, not thinner.
+Rules combine plain-language explanations with quantitative formulas or models. Their assumptions and scope make the reference values meaningful and allow justified departures to be examined.
 
-**Status.** v3.0 went into production on 2026-10-02, with 37 US names in the first batch. v3.1 followed on 10-08 — a first balance pass and a fix for the mid-band deadlock — and v3.2 on 10-17: order horizons decoupled from path horizons, market and limit entries merged into one *entry* whose kind is derived from the price, and a post-mortem that settles the chosen operation side by side with its alternatives. The first 112 v3.1 debates scored level with v2 on average, but with both tails fatter — HOLD fell from 65% to 9% of calls — which is the behavior the rebuild was after; the next cuts are aimed at the inputs. The rename to Equipoise landed on 10-17. v3.3 (deployed 10-25, live from 10-26) switches the core language to English and rebuilds the technical snapshot: price structure is now read at three genuinely different resolutions, after a bug that had the two shorter lenses sharing one dataset (the 🔭 entry in the design philosophy). The code release is next.
+## Further reading
 
----
-
-## 🏛️ Architecture: two advocates, an arbiter, evidence on call
-
-![architecture](images/architecture-v2.png)
-
-- 🔴 **Zealot** — the bull advocate. Builds the strongest long case and never exits easily.
-- 🔵 **Reaper** — the bear advocate; not a doomer but a profit-taker, asking "is this position still worth holding?"
-- ⚖️ **Arbiter** — presides over the debate. It holds **no stance of its own**, but it isn't a passive referee either. It stamps evidence (`verified` / `unverified` / `not-found`), keeps the **ledger** (every concession is a priced settlement, tallied by script each round), sets the **agenda** (each round it names the open issue both sides must engage), controls the floor, and writes the final report. Its ruling has to follow the ledger — *whoever has the case gets the lean* — and a mid-band verdict is legal only for a genuine stalemate. It is forbidden to mediate or float compromises; that was the old Fulcrum's job, and it's gone. It also absorbed the old **Chronicler**'s archivist role.
-- 🔭 **Scout & Runner** — the neutral evidence corps, spawned on demand, one per question. A **Scout** runs a single evidence leg: a **data** leg via IBKR (seven modes — peer comparison against a stock's *real* peers, relative strength, bars, economic series, event calendar…) or a **web-search** leg (tracing the cause-and-effect of a news item). A **Runner** executes a whole **task** along a fixed playbook (next section). Findings are shown to both sides, and may well cut against whoever asked. These roles run on a cheaper model tier than the three judging roles; the engine is never allowed to swap tiers on its own.
-
-**What changed from v1.** The **Fulcrum** damper — a neutral third pole — was retired. An n=56 post-mortem measured it as net neutral-to-negative: it destroyed value as often as it saved, and even its "saves" tended to land below the pass line (a dead-HOLD, opportunity-missing pattern). Its one useful function, rebuttal, was internalized into the two advocates; the Bayesian concession rule was re-gated so only *verified* evidence can force a step back; and a **directed-evidence** inlet was added so debate rounds inject new information instead of merely compressing toward the mean. The full reasoning — and the data — is in the [design philosophy](docs/design-philosophy.md).
-
-**And what has kept changing since.** Every numbered round after that has been an argument with the post-mortem data, and three threads run through all of them. **Balance** — no side and no strategy gets a free ride: buy-side and sell-side rules are written in pairs; a HOLD pays the same evidentiary toll as a trade; a "wait for confirmation" stance costs as much to declare as a position does; and in the post-mortem, *not* executing — a deep limit order that never fills — can never score higher than executing correctly on the same path. **Softer, fuller logic** — the crude "unconfirmed = invalid" gate gave way to graded rules: a slow grind upward is *evidence*, not noise; confirmation is a noise filter, not a default posture; a threshold is an anchor with a stated origin, not a switch. And **mantra vs. move** — the constitution keeps only the principles, while the concrete techniques live in ten short playbooks that spell out *why* each rule exists and *where* its reference numbers come from.
-
----
-
-## 🎫 Beyond a lookup: when a debater files a task
-
-![debate-and-task architecture](images/debate_task_architecture.png)
-
-A debater no longer fights solo. When a point needs more than a quick lookup — modeling a tariff shock through to CPI, reading a stock against its true peers, tracing a news item's cause and effect — it **files a task**: a work order that a neutral **runner** executes along a fixed playbook (an SOP pipeline) and hands back as a structured, high-value result. The **Scout** was the first such teammate; the playbook-runners are the rest.
-
-Two things make this more than delegation. **Evidence is demoted to a task's output** — the first-class unit is the task (one question, one answer), and the final verdict is the composite price of all those small settlements. And **strength is the execution result, not the volume of assertion**: shout a move's name with nothing run behind it and it's priced as bare rhetoric; only a *verified* task earns a top-tier card, cited by task ID and machine-reconciled against the task ledger. Not everything becomes a task, though — a single search or one data leg stays *direct* evidence, no ticket. A task always hangs off an **issue** — the priced claim it is meant to settle — and a *verified* result pins that one claim; it doesn't close the issue by itself. Each debate carries a task budget, trimmed by expected value.
-
-The **playbooks** are ten short SOPs — event pricing, crowding, flow attribution, magnitude-before-sign, price-action, execution lines, trend structure, size tiers, peer comparison, linked counterparties. Each one is numbered steps plus a read-off table, and every threshold in it comes with the *reason* it exists and the *origin* of the number — so it's a reference the runner can argue with, not a switch that fires. (The full story is in the [design philosophy](docs/design-philosophy.md).)
-
----
-
-## 🔄 The debate flow
-
-![flowchart](images/flowchart-v2.png)
-
-1. **Data prep** — market data, news, macro, plus pre-hydrated peer & economic evidence, assembled into one shared snapshot. A machine-computed **trend context** (slope, fit, counter-moves, days held above key levels) raises **beacons** naming the rules the debaters must address — the machine decides *when*, the model decides *what it means*.
-2. **Opening positions** — Zealot and Reaper each form an independent judgment, with no communication, and **stake 2–4 numbered pillars**, each priced in action points.
-3. **Debate rounds** — multi-round argument under the constitution, run as a **priced ledger**. A challenge must name the opposing pillar it attacks; a settlement moves the score by *exactly the price staked beforehand*, back when the outcome was unknown — nobody gets to decide how much to concede after the fact. Each round a script tallies the ledger and the Arbiter names the issue both sides must engage next. Fresh evidence — a Scout leg or a Runner task — is stamped `verified` / `unverified` / `not-found` and shared. **Concession is gated on *verified* evidence** — an unfalsifiable "there's risk" no longer extorts a step back — and pure interpretation with nothing new behind it is capped at a low tier.
-4. **Verdict** — a **two-pass ruling**. The Arbiter first rules *provisionally* from what was settled on the floor, reviewing every verified, executable claim as adopted or rejected with a reason (rejecting a verified claim that carries a price needs a stated reason); only then does it audit that ruling against the ledger's arithmetic, logging every adjustment. The report carries a 0–100 **confidence dial** (0 = extreme bearish, 50 = neutral, 100 = extreme bullish — *not* a buy/sell instruction), the actual execution (BUY / HOLD / SELL + sizing + entry/stop), a **mentality** with its situational basis (a "wait" is legal only for a *pending* change — with a date or a price, and an answer to "what if it never comes"), a **conviction budget** drawn from the pillars actually won, a priced list of **known flaws**, and a decoupled **short-term** view stated as a *liquidatable claim* — a target with an invalidation level, or a range with two edges. **HOLD is an operation, not an exemption**: it pays the same toll. Both advocates attach their dissent.
-5. **Factory gate.** A validator checks the report before it's written to Postgres — format, ledger arithmetic, required fields. It fails a report only for structural defects; *behavioural* smells (an early stalemate, an unanswered challenge, a verdict hugging the midpoint of a wide spread) are logged as **forensics** for the post-mortem and never used to intervene in a running debate.
-6. **Postcheck.** Days later, each call is scored against real prices (**0 = whiff / 50 = miss / 100 = hit**) on 3- and 20-day windows, with hit-line events, drawdown and crossings recorded — feeding the **BP** self-improvement loop described next.
-
----
-
-## 🧠 A system trained by its own hindsight (BP)
-
-Producing a good call is half the framework. The other half — the part that makes it *improve* — is the **BP loop**, and it's a pillar in its own right.
-
-Here's why it has to exist. Early on, the system's mistakes were the naive kind — chasing pumps, dumping on dips — and **I could spot them by eye**. As it got better, the errors turned subtle enough that only the **strongest models of the day (Claude, Gemini) could catch them**. Then it crossed a line: **no model can reliably tell, *in advance*, whether a given call is insight or accident.** The only judge left is **ground truth** — what the market actually did afterward. And once the debate is wired to live search, you **can't backtest**: there's no way to reconstruct the web as it was N days ago. History can't be replayed; it can only be run forward and graded later.
-
-That's the whole reason for BP. Every debate is archived; days later the **postcheck** scores each call against real prices (0 whiff / 50 miss / 100 hit) and a **reckoner** agent reviews it — given only what was knowable at the time, was this a real analytical miss, or just the odds? Across many reviews, recurring failures are abstracted into common problems, and those become edits to the constitution and the architecture.
-
-BP = **backpropagation**: the debate is the forward pass, the postcheck is the error against the real label, the review distills it into a "gradient" (a lesson, not a number), and rewriting the rules is the weight update (the constitution, not a matrix). Retiring the Fulcrum damper and re-gating the Bayesian rule were the first big updates this loop produced — decided not on a hunch but on **n=56 of the system's own measured history** (since backfilled to n=158, the conclusion unchanged). That measurement is published as the [v1 send-off report](docs/v1-send-off.md). Every numbered round since has been produced the same way: a post-mortem report names the disease — a verdict that averages, a ledger that stops moving, a "wait for confirmation" that had become free — and the next round treats it, with its acceptance sentinels written down *before* deployment so the following report can say whether it worked.
-
----
-
-## 🗄️ Data, search & runners
-
-All state now lives in **PostgreSQL** — technicals, news, reports, economic indicators, sentiment, and postcheck. The earlier on-disk JSON / CSV outputs are gone.
-
-| Data | How it's obtained |
-|---|---|
-| Prices, multi-timeframe candlesticks, peer data | **Interactive Brokers (IBKR)** — the one deterministic leg |
-| Stock news | **US:** Finnhub (the init leg). **EU / JP / KR:** agent web-search on the Claude Code / GPT Codex runners |
-| Macro & company fundamentals | increasingly **agent-searched** (Alpha Vantage / a PG cache remain as fallback) |
-| Market sentiment (Fear & Greed / VIX) | **per region** — CNN Fear & Greed for the US, with regional equivalents for EU / JP / KR |
-
-**One prompt, two engines.** The debate-and-postcheck logic has a single content layer — constitution, playbooks, output formats, skills — shared verbatim by a **Claude Code** runner and a **GPT Codex** runner; only a thin driver layer per harness differs. (An earlier **API version** — DeepSeek + Linkup / Gemini grounding — is retired to the museum: in practice AI still rewards raw power, and my self-built search turned out *far* worse than Claude / GPT with **native search**.) Right now the **GPT Codex version is the workhorse** (driven off a $200/month plan) and the Claude Code version is secondary. Models are tiered by role: the three judging roles (Arbiter, Zealot, Reaper) on a mid-high tier, Scouts and Runners on a small tier — and any deviation is a human's explicit call; the engine never swaps tiers on its own. It isn't only data-fetching that leans on agent search — the **core debate and postcheck themselves** run on the agents.
-
-**Agent-native "deployment."** There's no `git clone && deploy` anymore: you **hand the repo to Claude Code or GPT Codex and let it set everything up**. Orchestration runs through agents too, though the rhythm is only semi-automatic for now. A **Hermes** heartbeat agent served for a while as a dumb alarm clock, but quota — and an IBKR reconnect that needs me in the room — keep full automation out of reach. So the trigger is manual, and a conversational agent reads the timetable, the last run and the remaining quota and works out how many debates to fire. Batch runners then fire them in waves (regional overviews, then ETFs, then single names — parent and child debates no longer depend on each other, so they run concurrently); and the debate / postcheck skills can copy themselves from the server onto a fresh machine. Because a debate lives in files rather than in any one context window, a run that stops before delivering — but whose ledger buffer moved — is picked up by a fresh process from the last record (**relay continuation**), under a per-debate liveness watchdog. Every report is stamped with the model and harness that actually produced it. This edition leans on agents by design, which is also why it's less of a turnkey repo than v1 was.
-
----
-
-## 🛠️ Getting started: let an agent handle init
-
-The intended entry point for the upcoming code release is simple: **open the project in Codex or Claude Code and ask it to initialize the environment**. We are still organizing the setup instructions and scripts: database initialization, Hermes setup where needed, and the paths, configuration and entry instructions each Codex / Claude instance needs to find its way. A complete public initialization flow is not available yet; the runnable reference in this repository remains v1.
-
-> This thing has become so complicated that even I need an agent to organize it, initialize it, and keep it in sync.
-
----
-
-## 🧭 Design philosophy
-
-The transferable part of this project isn't the code — it's what the work *taught* me about making an LLM that *talks* finance actually *do* finance. That's written up as an evolving, bilingual retrospective:
-
-> **→ [Design Philosophy / 设计哲学](docs/design-philosophy.md)**
-
----
-
-<a id="easter-eggs"></a>
-
-## 🥚 Easter eggs
-
-Three things this project has outgrown, kept on purpose.
-
-- **The old name.** It started life as *Apex Quant* — a name Gemini suggested when all I could say was "I want to do LLM quant." The mirror was `apex_parliament` (a chamber of AIs arguing their way to a vote), the dashboard *apex dash*, the Claude Code twin *apex codex*. They are all Equipoise now; the story of the rename is in the 🌱 entry of the [design philosophy](docs/design-philosophy.md).
-- **The old address and the return.** The project first lived at [`sst19910323/apex_parliament`](https://github.com/sst19910323/apex_parliament). After that account was compromised in August 2026, development continued at [`sst19910323-dev/equipoise_open`](https://github.com/sst19910323-dev/equipoise_open). The main account has now been recovered, the original repository renamed, and the subsequent updates brought back to [`sst19910323/equipoise_open`](https://github.com/sst19910323/equipoise_open). Same author, same project history.
-- **The old paper.** Written in March 2026 about the v1 three-debater parliament, it now reads like a description of a different system. It remains the citable record of where this began:
-
-> **Apex Quant: A Multi-Agent Debate Framework for Quantitative Trading**
-> Shuting Sun · SSRN Technical Report · March 2026
-> [→ https://papers.ssrn.com/abstract=6354961](https://papers.ssrn.com/abstract=6354961)
-
-```bibtex
-@techreport{sun2026apexquant,
-  title  = {Apex Quant: A Multi-Agent Debate Framework for Quantitative Trading},
-  author = {Sun, Shuting},
-  year   = {2026},
-  url    = {https://papers.ssrn.com/abstract=6354961}
-}
-```
-
----
-
-## 🗂️ v1 archive
-
-The original edition — three debaters (Zealot / Reaper / **Fulcrum**) + a separate Chronicler, with everything on disk as JSON / CSV — is preserved for reference:
-
-- [**v1 send-off**](docs/v1-send-off.md) — a data-driven farewell: the full-sample postcheck (n=158) of the three-debater parliament, and the numbers that sent it to v2
-- [`README-v1.md`](README-v1.md) — the full v1 README (data schema, DAG scheduler, examples, etc.)
-- [`v1` branch](../../tree/v1) — the frozen v1 codebase
-
----
-
-<details>
-<summary>🕰️ <b>Timeline (click to expand)</b></summary>
-
-The cast's headcount tells the first arc — one overconfident agent → two → three → and back to two. The rest of the story is what layered on top: a **reckoner + BP loop** that trains the system on its own hindsight, the **task mode** now gradually taking shape (debate ⊃ task ⊃ evidence), and the shift off a self-built **API stack** onto **agent-native** runners (Claude Code / GPT Codex).
-
-In version terms: **Beta** (the undocumented single-agent and two-role days) → **v1.0** (the three-debater parliament, until 2026-07-18) → **v2.0** (two advocates + an arbiter, last production batch 2026-09-29) → **v3.0** (the ground-up rebuild, started 2026-09-30, in production since 10-02; v3.1 on 10-08, v3.2 on 10-17, v3.3 on 10-25).
-
-The latest milestones:
-
-- **2026-09-30** — Enough small releases had piled up that a layered structure had formed on its own. The rebuild of the complete trading-cognition system began, following that naturally-formed layering rather than a diagram drawn in advance.
-- **2026-10-07** — The name "Apex Quant," suggested by Gemini when all I could say was "I want to do LLM quant," no longer fit a project that had grown a style of its own. The real name was settled: **Equipoise（均势）** — balance under hard contention. The rename itself waited until everything could change at once.
-- **2026-10-17** — v3.2 goes live, and the project is formally renamed **Equipoise**; the repositories and the server follow over the next week.
-- **2026-10-23** — The rename lands everywhere: server path, database, the working repo `equipoise`, this mirror `equipoise_open`, the dashboard *Equipoise Dash*.
-- **2026-10-26** — English becomes the core language (v3.3): rules, debates, reports and verdicts are written in English; Chinese is rendered by a translation step for reports and verdicts.
-
-![timeline](images/timeline-v3.png)
-
-</details>
-
----
-
-## ⚠️ Disclaimer
-
-This project is for research and personal use only. It does not constitute investment advice.
-
-## 📜 License
-
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — Non-commercial, attribution, share-alike.
-
-Questions and discussion welcome: **sst19910323@gmail.com**
+[Design Philosophy](docs/design-philosophy.md) contains the longer reasoning, experiments, and stories behind the design; that public document is also being brought up to date. The [gallery](docs/screenshots.md) shows the current interface, [README-v1](README-v1.md) documents the archived implementation, and [Archive & easter eggs](#easter-eggs) collects earlier milestones.
 
 ---
 
@@ -234,216 +104,130 @@ Questions and discussion welcome: **sst19910323@gmail.com**
 
 # ⚖️ Equipoise（均势）— 中文
 
-### 基于对抗性多智能体辩论的量化分析框架
+[English](#english) | **中文**
 
-> **原名 Apex Quant。** 2026-10-17 起，项目正式启用真正的名字——**Equipoise（均势）**，激烈交锋之下的均衡——这个公开镜像也随之改名 `equipoise_open`。旧名字、旧地址和旧论文都留着，当作文末的[彩蛋](#彩蛋)。
+**用证据、对抗辩论与复核改进，组织市场研究。**
 
----
+Equipoise 是一个基于大语言模型、用于量化市场分析的多智能体框架。持不同立场的辩手面对同一组证据，质疑彼此的推理，再由仲裁者裁定。产出是一份可检查的研究记录：价格情景、备选操作方案，以及支持这些结论的理由。
 
-Equipoise 是一个基于大语言模型的多智能体量化分析框架。在给出任何决策之前，持**对立立场**的 agent 必须先完成一场结构化辩论。多数多智能体交易框架按**数据类型**分工（基本面、情绪、技术面），而 Equipoise 按**立场**分工。框架本身与市场无关，当前实现覆盖美股 / 欧股 / 日股 / 韩股。
+## 怎么运行
 
-> **🎯 2026 年 11 月——演习计划。** 当前的重点是逐回合拆开一场判断：它去找了什么信息，证据怎样改变看法，一个有道理的判断又在哪里丢掉了。下面的[演习计划](#drill-plan-zh)介绍这套方法，并附上第一期试验的分叉过程图。
->
-> **开源整理中。** 设计细节、公式、模型和当前代码正在一起整理。这次主要更新 README，先把演习计划讲清楚，没有发布新版实现。仓库里可运行的参考代码仍是存档的 **v1**。
+**初始化说明先留个位置，还在整理。** 当前的规则、公式、模型与代码正在准备公开。本文介绍现有系统与演习计划，截图来自正在运行的私有实例，并不代表现在克隆这个仓库就能复现它们。
 
-> **这份 README 写的是什么。** 下面的正文写的仍是 **v2 版**最后运行时的样子——二元辩手 + 一位仲裁者，底层 Postgres，以 agent 原生方式运行；v3 的正文会和代码一起到。最初那套三辩手、基于文件的 v1 已存档在 [`README-v1.md`](README-v1.md)，并冻结在 [`v1` 分支](../../tree/v1)。
->
-> **→ 完整来龙去脉（包括*为什么*从 v1 走到 v2、又为什么 v2 现在要重建）见 [设计哲学 / Design Philosophy](docs/design-philosophy.md)**（中英双语）。
+目前可参考的实现是 **v1**：见 [运行说明](README-v1.md) 和 [冻结代码](https://github.com/sst19910323/equipoise_open/tree/v1)，它采用的是早期架构。
 
-> **语言说明：** 自 **2026-10-26** 起，系统的工作语言是**英文**——规则、辩论记录、终报与复盘判词的原文都是英文，并以英文作为入库的真相；中文和其他语言由一道翻译步从原文渲染，只翻报告与判词（辩论过程不翻）。此前产出的内容仅中文，原样保留。
+计划中的入口是直接让 **Codex 或 Claude Code 初始化工程**，把数据库、负责监测与唤起的 Hermes 和各个工作实例的配置指引串起来。这部分说明还在整理。项目已经复杂到，连整理、初始化、同步本身，都得请 agent 帮忙了。
 
----
+## 它怎样工作
+
+![Equipoise：共享证据、对立辩手、逐标的报告与改进闭环](images/system-overview-en.png)
+
+*现有系统的概念总览。共享听证产生逐标的报告，改进回路表示经过审阅的规则与模型修订。*
+
+### 1. 共享的市场底图
+
+价格与技术结构、基本面与事件、新闻与宏观环境，组成共享快照。听证过程中，agent 可以围绕具体问题调用数据、检索或模型计算。结果向双方开放，也包括不利于提问者自身论点的结果。
+
+**当前主要数据源是盈透（IBKR），其次是 AI 自己的搜索。** 选择盈透主要是考虑性价比；代价是较老的客户端与接入流程，以及受限的实际并发能力，需要通过锁和请求排队协调多个 agent，避免调用互相卡住。
+
+如果你有更合适的数据源，建议让 agent 修改数据接入层，改接对应来源，并核对数据口径与调用方式。
+
+### 2. 对立的论点，可检查的判断
+
+**Zealot** 构建乐观论点；**Reaper** 是着眼于兑现利润的现实派，检查机会是否仍值得承担风险；**Arbiter** 审查论点与争议，给出有理由的裁决。证据可以支持鲜明的结论，达成一致或取中间值并不是目标。
+
+相关标的可以共享一场听证，同时保留各标的、各分析视角的独立结论。论证、举证请求、判断修订与异议，都留在记录里供检查。
+
+[查看医疗组听证开场节选](images/screenshots/debate-unh-opening.png) · [查看截取的辩论记录](images/screenshots/debate-unh-zh.png)。即使看板界面是中文，辩论仍保留英文原文。
+
+### 3. 把判断表达为明确的备选方案
+
+每个标的的报告把理由连接到价格情景与两套备选方案：**终局型方案**在目标期限上评估，**路径依赖型方案**关心途中条件如何触发行动。两者供择一使用，不是前后步骤，也不应叠加仓位。另有针对特定工具或风险视角的下行保护评估。
+
+[查看双方案卡与下行保护示例](images/screenshots/decision-cards-unh-zh.png)。它们是研究输出，不会据此自动下单。
 
 <a id="drill-plan-zh"></a>
 
-## 🎯 演习计划：少跑几场，多拆几层
+### 4. BP／演习计划
 
-规则越攒越厚，复盘的一个总分却常常说不清：它当时该翻哪本秘籍、为什么没翻、推理在哪一步走偏。于是有了**演习**：挑几个典型历史节点，冻结当时可知的材料，让独立的辩手一回合一回合地重跑。导演可以知道结局，辩手和外呼答复都要守住当时的信息边界；怎样把这个边界还原好，本身就是演习的一部分。
+**BP（借用反向传播的比喻）是围绕演习组织的反馈与修订过程。** 它要找出判断在哪一步出了问题，改进背后的通用规则或模型，再检验改动能否经得起其他案例。
 
-每回合形成一个循环：先根据冻结材料建立一份有依据的参考发言，再对照实际表现，改通用机制，然后重跑。**参考发言留在评审侧，不塞给辩手；下一次的结果，必须由它自己做出来。** 更强模型写的答案也一样要经得起检查。
+后验复盘（Postcheck）将存档报告与后续市场走势对照，在 D+3、D+20 等窗口打分；跨案例的统计帮助发现值得追查的模式。演习可以从这些发现出发，也可以直接选择一个历史问题。计划分为四步：
 
-第一期就把这件事的价值暴露得很清楚。要求辩手先解释“最近谁在动、为什么动”，帮助 Reaper 在第一回合找到了下行风险；可随后的两回合，它一路让步，最后竟比 Zealot 还乐观。发现风险和保住有依据的判断，是两个不同的问题。沿着分叉追下去，才看清部分反驳怎样变成过量让步，仲裁又怎样对延续和变化用了不同的举证要求。
+1. **冻结案例。** 还原历史时点可获得的材料，再核查辩手输入与举证答复，排除混入的事后信息。
+2. **拆开推理。** 由独立角色重演听证，逐回合检查它寻找了什么、确认了什么、反驳了什么，又丢失了什么。评审侧依据同一历史信息建立参考论证，不把它塞进辩手的上下文。
+3. **修订重跑。** 修改通用规则或模型，再从干净的上下文重跑；下一次的答案仍由辩手自己得出。
+4. **跨案例检验。** 在接受改动前，检查其他日期、市场环境与未参与调试的案例。过程质量、预测质量与操作结果，各自都需要证据。
 
-**演习找病灶，统计查它是不是常见病。** 改动还要经过后续日期、上涨与震荡对照，以及没有参与调试的窗口检验。发现先记账，找其他案例印证，改完留观察期。过程是否改善、预测是否更准、操作结果是否更好，各自都要拿证据说话。
+当前重点是把这套演习流程写清楚、做成可复现的过程。修订由人和 agent 审阅后采纳；这里的 BP 改进的是系统规则与模型，不是训练神经网络权重。
 
-<details>
-<summary>🧪 <b>第一期演习怎么走过来的——2026 年 11 月 7–9 日（点击展开）</b></summary>
+### 5. 让研究持续更新
 
-![Equipoise 首次演习：逐回合分叉、修正与重跑](images/drill-tree-2026-11-09.png)
+**Hermes 负责监测、唤起与工作实例协调。** 它查看事件时间表，检查盈透（IBKR）是否在线，通过盈透拉取股价，计算现价相对已有 result 的偏离度。这些检查支撑两项主要职责：
 
-[查看原尺寸图](images/drill-tree-2026-11-09.png)。这张图记录首期演习到 v3.6 的历史过程，也保留了失败分支和验收口径的调整；图中的模型名称与部署标记均属于当时。
+- 在适当时候，喊 **Codex 或 Claude Code** 更新公司与大盘的基本面。
+- 在适当时候，喊 **Codex** 起来跑股票。Hermes 协调多个 Codex 实例，优先选择剩余 usage 最多的那个；**最终跑哪些股票，由 Codex 决定**。
 
-</details>
+当前部署中，重启盈透需要人工通过手机配合。盈透离线期间，Hermes 暂停唤起股票辩论。这套安排的公开初始化说明仍在准备。
 
-当前准备先把这套工作方法讲清楚。**设计细节、公式、模型和代码仍在一起整理。** 公开实现暂时保留 v1；后续代码发布时，再配上能让 Codex 或 Claude Code 带着完成初始化的指引。
+[截图画廊](docs/screenshots.md) 展示了分组看板、技术面、基本面、宏观环境、后验复盘与值班调度。
 
----
+## 设计原则
 
-<a id="v3-重建"></a>
+### 自然成层
 
-## 🚧 2026 年 10 月：v3.0 整体重建
+证据、判断、方案表达、评估与调度，各自放在适合的层级。职责和接口明确，每层可以演进，不必把其他层的工作揽进来。
 
-![v3 流程](images/flowchart-v3.png)
+### 薄而坚实
 
-**为什么是现在。** 这套系统从来不是自上而下设计出来的，它是长出来的：今天加 ensemble，明天设计角色立场，后天把 evidence 和 task 拆成两层，再后来把原则和招式分开。长出来的东西层次分明，但粗糙——而继续打补丁已经打不动了：一轮又一轮的手术之后，复盘均分始终停在 70 档。可恰恰是有了这个雏形，真正的顶层设计才第一次成为可能（[设计哲学](docs/design-philosophy.md)里的 🪴 一条讲的就是这个）。所以这次不再打补丁，而是把整套规则语料和编排**推倒重建**：旧版打了 tag，最后一批生产场（2026-09-29）作基线，目标是复盘均分站上 80。
+用紧凑的一组 skill（可复用的指令模块）减少重复机制，同时尽可能覆盖市场机制与模型的不同侧面。精简必须保留应对不同情境所需的分析能力，并主动寻找、补齐遗漏。
 
-**怎么做的。** 两个 AI 会诊。Claude Code 和 GPT Codex 各自独立出方案，互相复核，有分歧的地方由我拍板。
+### 对等求衡
 
-**改了什么。**
+所有 skill、举证与裁决都遵循对等的标准。包括买入、减持、持有、等待与对冲在内的所有操作，都要凭证据公平竞争，结构上不偏向任何一种操作。均势来自公平交锋，不要求强行折中。
 
-- **一条判断链，三方共用** —— 事实 → 市场理解（已经反映了多少、赔率、短期路径）→ 心态 → 操作 → 综合评分。一切沿这条链自下而上生成；评分排在最后，而不是先有分数再倒推理由。
-- **角色重述。** Zealot 是乐观者，Reaper 是见好就收的现实者——不是"多头"和"空头"。两人的*欲望*可以不对称；举证负担、证据资格、裁判规则必须对称。仲裁者是一个**定价者**，有两种对称的失败方式：偏激，和稀泥。
-- **一次发言就是一份带引用的报告，分拍写成。** 一轮之内每位辩手想走几拍走几拍——申报数据调用、搜索或模型调用，读回执，再交终稿。只有终稿带进下一轮。
-- **两边交锋时，仲裁者对内容保持沉默。** 之后它公开一份拟定终裁，接受一两轮针对具体错误的异议，再定稿，双方签章并附上异议。
-- **一条带共用参考尺的定价链** —— 大致是"净期望 ÷ 参考波幅" —— 让三方争的是*输入*，而不是各用各的尺子。一次移动 = "现在应计入的影响 − 此前已计入的影响"：复述已结算的证据一分不动，辩赢本身也不加分。
-- **证据实事求是。** 证实、证伪、部分成立、没查到，都是正常结果。核定只针对事实主张，并写清适用范围；预测只能在账本上辩，不存在"被验证"。
-- **一棵规则树，一份协议。** 原则常驻；模型手册按需装载；一份编排协议加一个按步骤驱动的脚本由两个引擎共用，后面只有一道出厂闸。
-- **大白话命名。** 信心刻度改叫*综合评分*，task 改叫*模型调用*，playbook 改叫*模型手册*，等等。这份 README 的正文仍沿用 v2 的叫法，随代码发布一起重写。
+### 有理有尺
 
-**我盯得最紧的风险**，正是 🧩 那条写过的：大重构会悄悄丢掉承重的规则。所以这次重建配了一次逐行的丢失核查，过了一千来行规则。整条丢掉的极少，但约一成被弱化了——而且弱化的几乎总是成对条款里的同一半：约束那半留下了，鼓励出手那半没了。这些正在一条条补回去。标准是 v3.0 必须比旧版*更充分*，而不是更瘦。
+规则由解释与量化公式、模型共同构成。说明适用前提与范围，让参考值有来由，也让有依据的偏离可以被讨论和检查。
 
-**现状。** v3.0 已于 2026-10-02 切入生产，首批 37 只美股。v3.1 在 10-08 跟上——第一组平衡性修正，加上中间带死局的修复；v3.2 在 10-17：订单期限与路径期限解绑，市价单和限价单合并成一个"入场"、由价位派生类型，复盘把所选操作和它的备选并排清算。v3.1 头 112 场的均分与 v2 持平，但两尾都更肥了——HOLD 从 65% 降到 9%——这正是重建要的行为换血；下一刀对准输入端。改名 Equipoise 在 10-17 落地。v3.3（10-25 部署，10-26 起生效）把核心语言切成英文，并重建了技术快照：价格结构从此在三个真正不同的分辨率上读，此前有个 bug 让两个较短的镜头共用同一份数据（见设计哲学 🔭 一条）。接下来是代码发布。
+## 延伸阅读
+
+更深入的理由、实验与趣闻放在 [设计哲学](docs/design-philosophy.md)，这份公开文档也在继续同步。[截图画廊](docs/screenshots.md) 展示现有界面，[README-v1](README-v1.md) 则记录存档实现。
 
 ---
 
-## 🏛️ 架构：两位辩手、一位仲裁者、按需取证
-
-![架构](images/architecture-v2.png)
-
-- 🔴 **Zealot** —— 多头辩手，构建最强的做多理由，不轻易离场。
-- 🔵 **Reaper** —— 空头辩手；不是唱衰者，而是止盈者，只问"这仓还值不值得留"。
-- ⚖️ **Arbiter（仲裁者）** —— 主持辩论。它**没有自己的立场**，但也不是个被动的裁判。它给证据盖章（`verified` / `unverified` / `not-found`），管**账本**（每次退让都是一笔事先标价的结算，每轮由脚本机械算账），定**议程**（每轮点名一个未结议题，逼两边在同一张牌上对撞），控场，并写终报。它的终裁必须跟着账本走 —— *谁有理向着谁* —— 只有真僵持才允许落中间带。它被明令**禁止调停**、禁止提折中方案：那是当年 Fulcrum 的活，已经没了。它还接管了原来 **史官（Chronicler）** 的存档职能。
-- 🔭 **Scout（取证员）与 Runner（执行员）** —— 中立取证队，按需派出、一问一员。**Scout** 跑单条证据腿：经 IBKR 的**数据腿**（七种模式 —— 跟这只票*真正的*同行做横向对比、相对强弱、K 线、经济序列、事件日历……）或**联网搜索腿**（理清一条新闻的前因后果）；**Runner** 照一本固定 playbook 跑完一整张 **task**（见下节）。取证结果对两边公开，而且完全可能不利于发单的那一方。这两个角色跑在比裁判三角色更便宜的模型档位上，引擎不允许自己换档。
-
-**相比 v1 变了什么。** 当阻尼器的中立第三极 **Fulcrum** 被退役了。一次 n=56 的复盘量出它净贡献中性偏负：毁值和拦截一样多，连"拦对"的也多半够不上及格线（一种"死 HOLD、白错过机会"的形态）。它唯一有用的"反驳"职能被拆进两位辩手内化；贝叶斯退让规则被重新设门槛，只有 *verified* 证据才能逼退让；再加一个**定向取证**的信息入口，让每轮辩论真的注入新信息、而非只朝均值压缩。完整推理与数据见[设计哲学](docs/design-philosophy.md)。
-
-**之后还在变什么。** 那以后每一轮编号大改，都是跟复盘数据的一次对账，贯穿其中的是三条线。**均衡化** —— 不让任何一方、任何一种策略占便宜：买侧的规则必配卖侧的版本；HOLD 要交和交易一样的举证过路费；"等确认"这个心态申报起来要和持仓一样有代价；复盘里，同一条走势下"不执行"（比如一张永远成交不了的深挂单）的得分不许高过"正确执行"。**柔性化** —— "没确认就无效"那种粗暴闸门换成了分档的完备逻辑：阴涨是*有证据的行情*，不是噪音；确认是防噪音的闸，不是万能默认姿态；阈值是带来历的锚，不是开关。**心法与招式** —— 宪法只留原则，具体打法住进十本短 playbook，每一条都写清*为什么*这样做、参考的数字*从哪来*。
-
----
-
-## 🎫 不止于查一下：辩手可以发一张 task
-
-![辩论与 task 架构](images/debate_task_architecture.png)
-
-辩手不再单打独斗。一个点需要的不止是随手查一下时——把关税冲击推演到 CPI、拿一只票跟它真正的同行比、理清一条新闻的前因后果——它会**发一张 task 单**：一张工作单，由中立的**执行员（runner）**照一本固定的 playbook（一条 SOP 流水线）执行，再作为结构化的高价值结果交回。**Scout** 是这样的第一个队友，playbook 执行员是其余的。
-
-有两点让它不只是"分工"。**证据被降级为 task 的产出**——一等单位是 task（一个问题、一个答案），而终裁是所有这些小结算的综合定价。以及**强度看执行结果，不看嗓门**：喊出招式名、背后什么都没跑，就按裸修辞定价；只有 *verified* 的 task 才配最高档的牌，须引 task ID、并由机器与 task 台账对账。但不是什么都变成 task——单次搜索、单条数据腿仍是*直属*证据，不开单子。一张 task 永远挂在一个**议题**下 —— 它要结算的那张有价的牌；*verified* 的结果钉死的是那一条主张，并不自动结案整个议题。每场有 task 预算，按期望收益砍。
-
-那十本 **playbook** 是十份短 SOP —— 事件定价、拥挤度、资金流归因、幅度先于符号、价格动作、执行线、趋势结构、大小票分层、同业横向、联动对手盘。每本都是编号步骤加判读表，里面每个阈值都附着它存在的*理由*和数字的*来历* —— 所以它是执行员可以据理力争的参照系，不是一碰就触发的开关。（完整来龙去脉见[设计哲学](docs/design-philosophy.md)。）
-
----
-
-## 🔄 辩论流程
-
-![流程](images/flowchart-v2.png)
-
-1. **备餐（Data Prep）** —— 行情、新闻、宏观，外加预先水合的同业与经济证据，汇成一份共享快照。机器另算一份**趋势结构**（斜率、拟合度、逆向回撤、站稳关键位的天数），由它点亮**引信**、点名辩手必须处置的条款 —— 机器判"何时"，模型判"何意"。
-2. **开局立场** —— Zealot 与 Reaper 各自独立判断，互不通气，并各**立 2–4 根编号支柱**，每根以 action 分标价。
-3. **多轮辩论** —— 在宪法约束下多轮交锋，跑的是一本**挂牌定价的账**。应战必须点名攻击对方的哪根支柱；结算的幅度 = *输赢未知时事先挂的价* —— 没人能事后再"看着给"退让分数。每轮脚本机械算账公示，仲裁者点名下一轮两边必须对撞的议题。新证据 —— Scout 的一条腿或 Runner 的一张 task —— 盖 `verified` / `unverified` / `not-found` 并三方共享。**退让以 *verified* 证据为门槛** —— 一个不可证伪的"有风险"再也讹不到退让；没有新证据的纯解读，牌价封顶在低档。
-4. **裁决** —— **两遍终裁**。仲裁者先只凭场上结算立 *provisional*：把每条 verified 且可执行的主张逐条判采纳 / 驳回并给理由（驳回一条带价位的 verified 主张，必须说出为什么不该执行）；然后才拿账本算术审计这份初判，每处改动留痕。终报带一个 0–100 的**信心刻度**（0 极空、50 中性、100 极多 —— *不是*买卖指令）、实际执行（BUY / HOLD / SELL + 仓位 + 入场/止损）、一个带情境依据的**心态**（"等待"只对*未决*的变化合法 —— 要有日期或价位，还要答得出"等不来怎么办"）、从真正赢下的支柱里领取的**信念额度**、一份标了价的**已知瑕疵**清单，以及一个解耦的**短线**视图 —— 写成*可清算的价位主张*：一个目标配一条失效线，或者一个带两沿的区间。**HOLD 是操作，不是豁免**：交一样的过路费。两位辩手各自附上异议。
-5. **出厂机检。** 写入 Postgres 之前先过一道校验 —— 格式、账本算术、必填字段。它只因结构性缺陷拒出厂；*行为类*的可疑（过早僵持、挑战无人应答、宽价差下终裁贴中点）只记进 **forensics** 留给复盘用，永远不拿来干预进行中的辩论。
-6. **后验（Postcheck）。** 若干天后用真实价格给每次判断打分（**0 踩空 / 50 错过 / 100 踩中**），分 3 / 20 个交易日两档窗口，撞线事件、回撤深度、穿越次数一并记录 —— 喂给下面要讲的 **BP** 自我改进闭环。
-
----
-
-## 🧠 一套被自己"事后诸葛"训练的系统（BP）
-
-给出一个好判断只是这框架的一半。另一半 —— 让它**自我改进**的那一半 —— 是 **BP 闭环**，它本身就是一根支柱。
-
-为什么非有它不可：早期系统犯的是幼稚错误 —— 追涨杀跌 —— **我肉眼就能看出来**。它变强之后，错误越来越微妙，只有**当时最强的模型（Claude、Gemini）才抓得住**。再往后就越过一条线：**没有任何模型能*事先*可靠地分辨，一次判断到底是洞见还是事故。** 唯一还能当裁判的，是 **ground truth** —— 事后市场真正怎么走。更何况，一旦辩论接了实时搜索，就**没法回测**了：你无法还原 N 天前那一刻的网络。历史重放不了，只能正向跑一遍、事后再打分。
-
-这就是 BP 的全部理由。每场辩论都落盘；若干天后**后验**用真实价格给每次判断打分（0 踩空 / 50 错过 / 100 踩中），再由 **reckoner（清算者）**复盘 —— 就当时能知道的信息，这是真正的分析失误，还是本就属于赔率？反复出现的失误被抽象成共性问题，再变成对宪法与架构的修改。
-
-BP = **反向传播**：辩论是前向推理，后验是对真实标签算误差，复盘把它提炼成"梯度"（一条教训，不是数字），改规则就是更新权重（那部宪法，不是矩阵）。退役 Fulcrum、给贝叶斯重设门槛，就是这个闭环跑出的头两个大更新 —— 不靠拍脑袋，靠系统自己 **n=56** 的实测历史（后来补跑扩到 n=158，结论不变）。那次实测已作为 [v1 送别报告](docs/v1-send-off.md) 公开。之后每一轮编号大改都是同一条路生出来的：一册复盘点出病灶 —— 终裁在算平均、账本不动了、"等确认"变成了免费心态 —— 下一轮对因下刀，并且在部署*之前*先把验收哨兵写下来，好让再下一册复盘能说出这刀到底有没有用。
-
----
-
-## 🗄️ 数据、搜索与运行版本
-
-所有状态现已存入 **PostgreSQL** —— 技术指标、新闻、报告、经济指标、情绪、后验。此前的 JSON / CSV 文件输出已取消。
-
-| 数据 | 怎么取 |
-|---|---|
-| 行情、多时间尺度 K 线、同业数据 | **盈透（IBKR）** —— 唯一确定性的一条腿 |
-| 个股新闻 | **美股：** Finnhub（init 腿）。**欧 / 日 / 韩：** Claude Code / GPT Codex runner 的 agent 联网搜索 |
-| 宏观与公司基本面 | 越来越靠 **agent 搜索**（Alpha Vantage / PG 缓存留作兜底） |
-| 市场情绪（Fear & Greed / VIX） | **分区** —— 美股用 CNN Fear & Greed，欧 / 日 / 韩各有对应的区域指标 |
-
-**一套 prompt，两个引擎。** "辩论 + 后验"的逻辑只有一层内容 —— 宪法、playbook、输出格式、skill —— 由 **Claude Code** runner 和 **GPT Codex** runner 逐字共用，两边只差一层薄薄的驱动壳。（早先的 **API 版** —— agent 用 DeepSeek、搜索用 Linkup 或 Gemini grounding —— 已退役进博物馆：实践下来 AI 到底还是讲究"力大砖飞"，我自己搭的搜索比 Claude / GPT 的**原生搜索**差很多。）眼下 **GPT Codex 版是主力**（用一个 200 刀/月的套餐驱动），Claude Code 版次之。模型按角色分档：裁判三角色（仲裁者、Zealot、Reaper）用中高档，Scout 与 Runner 用小模型 —— 任何偏离都要人明确特批，引擎永不自主换档。而且不只是取数靠 agent 搜索，**核心的辩论与后验本身也跑在 agent 上**。
-
-**agent 原生的"部署"。** 不再是 `git clone && 部署`：而是**把仓库交给 Claude Code 或 GPT Codex，让它自己把一切装好**。编排也交给 agent，只是节奏眼下还是半自动的。一个 **Hermes** 心跳 agent 当过一阵"笨闹钟"，但额度、加上盈透重连需要我本人在场，让全自动始终够不着。所以驱动是手动的，由对话 agent 先看时间表、上一轮跑完的时间和剩余额度，算出这次该跑几场。然后批处理 runner 分波次开火（先各区域大盘、再 ETF、再个股 —— 父子场之间不再有依赖，可以并发）；辩论 / 后验的 skill 还能从服务器自拷到一台新机器。因为一场辩论住在文件里、而不在某一个上下文窗口里，一棒没跑完就停、但账本 buffer 有前进的场次，会由新进程从最后一条记录接着跑（**接力续跑**），外面还有逐场的活性看门狗。每份终报都盖着真正产出它的模型与 harness 的签章。这一版从设计上就重度依赖 agent，这也是它不像 v1 那样开箱即用的原因。
-
----
-
-## 🛠️ 怎么开始：让 agent 来 init
-
-后续代码开源的入口就准备做成一句话：**用 Codex 或 Claude Code 打开项目，让它带着你初始化环境。** 目前还在整理初始化说明和脚本：数据库怎么建、需要时 Hermes 怎么装，以及各个 Codex / Claude 实例该去哪里找路径、配置和启动指引。完整的公开初始化流程尚未就绪；当前仓库里可运行的参考代码仍是 v1。
-
-> 这玩意已经复杂到，连我自己整理、初始化、同步，都得请 agent 帮忙了。
-
----
-
-## 🧭 设计哲学
-
-这个项目真正可迁移的不是代码，而是这一路让我明白的一件事：**怎么让一个会"说"金融的 LLM，真正"会做"金融。** 这些写成了一份持续演进、中英双语的回顾：
-
-> **→ [设计哲学 / Design Philosophy](docs/design-philosophy.md)**
-
----
-
+<a id="easter-eggs"></a>
 <a id="彩蛋"></a>
 
-## 🥚 彩蛋
-
-三样项目已经长过了头、却特意留下的东西。
-
-- **旧名字。** 它最初叫 *Apex Quant*——当初跟 Gemini 说"要做 LLM 的量化"时它起的名。镜像叫 `apex_parliament`（一屋子 AI 吵架、投票表决的议会），看板叫 *apex dash*，Claude Code 平行版叫 *apex codex*。现在它们都叫 Equipoise；改名的来龙去脉在[设计哲学](docs/design-philosophy.md)的 🌱 一条里。
-- **旧地址与回归。** 项目最早住在 [`sst19910323/apex_parliament`](https://github.com/sst19910323/apex_parliament)。大号在 2026 年 8 月被盗后，项目转到小号的 [`sst19910323-dev/equipoise_open`](https://github.com/sst19910323-dev/equipoise_open) 继续维护。现在大号已经找回，原仓库已改名为 [`sst19910323/equipoise_open`](https://github.com/sst19910323/equipoise_open)，这段时间的更新也已同步回来。作者相同，项目历史一脉相承。
-- **旧论文。** 2026 年 3 月写的，讲的是 v1 三辩手议会，现在读起来像另一套系统。但它仍是这一切起点的可引用记录：
-
-> **Apex Quant: A Multi-Agent Debate Framework for Quantitative Trading**
-> Shuting Sun · SSRN 技术报告 · 2026 年 3 月
-> [→ https://papers.ssrn.com/abstract=6354961](https://papers.ssrn.com/abstract=6354961)
-
----
-
-## 🗂️ v1 存档
-
-最初那一版 —— 三辩手（Zealot / Reaper / **Fulcrum**）+ 独立史官，一切以 JSON / CSV 落盘 —— 已保留备查：
-
-- [**v1 送别**](docs/v1-send-off.md) —— 一次数据驱动的谢幕：三辩手议会的全样本后验（n=158），以及把它送往 v2 的那些数字
-- [`README-v1.md`](README-v1.md) —— 完整的 v1 README（数据 schema、DAG 调度、示例等）
-- [`v1` 分支](../../tree/v1) —— 冻结的 v1 代码
-
----
-
 <details>
-<summary>🕰️ <b>开发时间线（点击展开）</b></summary>
+<summary>🕰️ Archive & easter eggs / 存档与彩蛋</summary>
 
-阵容的人数是故事的前半段——一个过度自信的单 agent → 两个 → 三个 → 又收回两个。后半段是层层叠上去的东西：一个让系统用自己"事后诸葛"训练自己的 **reckoner + BP 闭环**、如今逐渐成形的 **task 模式**（辩论 ⊃ task ⊃ evidence），以及从自搭的 **API 版**转向 **agent 原生**运行版（Claude Code / GPT Codex）。
+The project once went by **Apex Quant / Apex Parliament**. It became **Equipoise** in October 2026; the public home is now [sst19910323/equipoise_open](https://github.com/sst19910323/equipoise_open).
 
-按大版本算：**Beta**（没留下详细记录的单 agent 与双角色草创期）→ **v1.0**（三辩手议会，到 2026-07-18）→ **v2.0**（两位辩手 + 一位仲裁者，最后一批生产场 2026-09-29）→ **v3.0**（推倒重来的整体重建，2026-09-30 开工，10-02 起在生产运行；v3.1 10-08，v3.2 10-17，v3.3 10-25）。
+项目曾使用 **Apex Quant / Apex Parliament** 的名字，2026 年 10 月更名为 **Equipoise（均势）**。早期三辩手版本与之后的重构，留在这些存档里：
 
-最新的几个节点：
+- [v1 send-off / v1 送别](docs/v1-send-off.md)
+- [Original paper / 早期论文](https://papers.ssrn.com/abstract=6354961)
+- [Design Philosophy / 设计哲学](docs/design-philosophy.md)
 
-- **2026-09-30** —— 小版本更新积累下来，一个分层的结构已经自然形成。于是开始按照这个自然形成的分层，完整重构整套交易认知体系。
-- **2026-10-07** —— 当初跟 Gemini 3 说"要做 LLM 的量化"时还没做出自己的风格，它起的 "Apex Quant" 已经不像这套系统真正的样子。正式名字定下：**Equipoise（均势）**——激烈交锋之下的均衡。改名本身等到所有地方能一起换的那天。
-- **2026-10-17** —— v3.2 上线，项目正式更名 **Equipoise**；仓库和服务器在随后一周里陆续跟进。
-- **2026-10-23** —— 改名落到所有地方：服务器路径、数据库、工作仓库 `equipoise`、这个镜像 `equipoise_open`、看板 *Equipoise Dash*。
-- **2026-10-26** —— 英文成为核心语言（v3.3）：规则、辩论、报告、判词的原文都是英文；中文由翻译步从报告与判词渲染。
+**Historical timeline / 历史时间线**
 
-![timeline](images/timeline-v3.png)
+![An archived timeline of earlier versions, through October 2026](images/timeline-v3.png)
+
+**First drill, November 7–9, 2026 / 首期演习过程图**
+
+![Historical branches, corrections, and reruns from the first drill](images/drill-tree-2026-11-09.png)
+
+These are historical records, not current architecture diagrams. The drill tree includes failed branches and revisions through v3.6; model and deployment labels belong to that experiment.
+
+以上是历史记录，不是当前架构说明。演习图保留了到 v3.6 的失败分支与修订过程，其中的模型和部署标记属于当时的试验。
 
 </details>
 
 ---
 
-## ⚠️ 免责声明
+For research and personal use; not investment advice. / 仅供研究与个人使用，不构成投资建议。
 
-本项目仅供研究与个人使用，不构成任何投资建议。
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) · Non-commercial, attribution, share-alike / 非商业使用、署名、相同方式共享。
 
-## 📜 许可证
-
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) —— 非商业使用，署名，相同方式共享。
-
-欢迎来信探讨：**sst19910323@gmail.com**
+Questions and discussion / 交流：**sst19910323@gmail.com**

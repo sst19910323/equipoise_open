@@ -1,0 +1,25 @@
+Create a polished English-language editorial system diagram for the public README of Equipoise. Landscape, approximately 1536 x 1024. This is a high-level explanation for a newcomer, not a chronology or an implementation specification.
+
+Style: white/very pale warm background, navy typography, jade for Zealot, muted coral for Reaper, blue for evidence and outputs, restrained amber for evaluation. Precise thin outlines, generous whitespace, compact tasteful line-art icons, beautiful legible sans-serif text. No stock-market profit arrows, robot mascots, third debater, vendor logos, author credits or decorative filler.
+
+Title: EQUIPOISE
+Subtitle: Evidence · Debate · Decision · Improvement
+
+Arrange three clear horizontal bands, all labels English and carefully spelled:
+
+Top band labeled INPUTS: three small cards 'Prices & technicals', 'Fundamentals & events', 'News & macro'. Merge their arrows into one 'Shared snapshot' above the hearing.
+
+Middle band labeled RESEARCH & DECISION: a central rounded panel titled 'Shared hearing'. Two equal-sized opposing cards inside: 'ZEALOT' / 'Optimistic case' in jade and 'REAPER' / 'Profit-taking case' in coral. A balanced double-headed arrow between them labeled 'Claims · challenges · revisions'. A small separate card to the left titled 'Evidence on demand', with subtitle 'Data · Search · Model calls' and bidirectional connection to the hearing. Below the advocates inside the panel, a navy neutral card 'ARBITER' / 'Review claims & settle disputes'. Both advocates connect to it. One outgoing arrow on the right to a blue panel titled 'Member reports', containing three compact rows 'Price scenarios', 'Alternative operation plans', 'Downside-protection signal'. Small plain note beneath output: 'Shared debate · individual decisions'. Arbiter is not a third debating stance. Do not show automatic order execution.
+
+Bottom band labeled EVALUATION & IMPROVEMENT: 'Observed outcomes' flows into 'POSTCHECK' with subtitle 'Score · compare · aggregate', then into a larger 'DRILLS' card with subtitle 'Replay · diagnose · revise · validate'. From DRILLS draw one clear return arrow along the outside of the central panel to 'Shared hearing', labeled 'Reviewed rule & model changes'. The loop means humans and agents investigate and validate changes; it does not mean autonomous live rewriting or neural weight training. Ensure this return arrow points toward the hearing, not away from it. Do not draw a second duplicate bottom feedback path.
+
+A quiet footer outside the bands: 'Hermes monitors · Codex schedules · Agents run'. No other text. All text sharp and easy to read. The middle band is the largest; keep the image uncluttered and the arrows unambiguous.
+
+Final editorial corrections applied to the generated diagram:
+- Connect Shared snapshot down into Shared hearing.
+- Change Observed outcomes to Reports + outcomes.
+- Rename Member reports to Per-asset reports.
+- Rename DRILLS to BP / DRILLS; add Frozen historical cases.
+- Make the Postcheck-to-drills connection dashed: postcheck can suggest cases, but is not a prerequisite for a drill.
+- Make the return loop dashed and label it Reviewed offline rule & model changes, pointing back into Shared hearing.
+- Change the footer to Hermes monitors · Codex schedules · Agents analyze.

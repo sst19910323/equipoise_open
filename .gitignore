@@ -20,3 +20,7 @@ results/
 # Environment
 .env
 *.env
+
+# Local source images and AI consultation records
+/.local/
+/council/
