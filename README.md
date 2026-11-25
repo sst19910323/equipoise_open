@@ -13,15 +13,40 @@
 
 Equipoise is an LLM-based multi-agent framework for quantitative analysis. Before any decision is emitted, agents holding **opposing stances** must complete a structured debate. Most multi-agent trading frameworks split agents by **data type** (fundamentals, sentiment, technicals); Equipoise splits them by **stance**. The framework is market-agnostic; the current implementation covers US / EU / JP / KR equities.
 
-> **🚧 October 2026 — a turning point.** The v2 line ran its last production batch on **2026-09-29**. The next day a ground-up **v3.0 rebuild** began — rules, orchestration and naming all redone under one top-level design. It went into production on **2026-10-02**, followed by v3.1 (10-08), v3.2 (10-17) and v3.3 (10-25: an English core and a rebuilt technical snapshot); and on **2026-10-17** the project took its real name, **Equipoise**. Details in [the v3.0 section](#v3-rebuild) just below.
+> **🎯 November 2026 — the drill plan.** The current focus is inspecting how a judgment develops, round by round: what information the agents seek, how evidence changes their views, and where a useful judgment gets lost. The [drill plan](#drill-plan) below explains the approach and shows the first experiment's branching history.
 >
-> **Code is coming.** Until now this repo has open-sourced only the **thinking** — the design philosophy and this README — because v2 changed every week and its code was never in a state worth freezing. v3 was built to be publishable: one rule tree, one orchestration protocol shared by both engines. The working repo finished its move to the new name (paths, database, environment) on 10-23; the scrubbed code release is what comes next. Until then the runnable reference code is the archived **v1**.
+> **Release preparation.** The design details, formulas, models and current code are being organized for publication together. This update brings the README up to date on the drill plan; it does not release a new implementation. The runnable reference code here remains the archived **v1**.
 
 > **What this README describes.** The body below still describes the **v2 edition** as it last ran — two advocates + an arbiter, backed by Postgres and run agent-natively; the v3 write-up arrives together with the code. The original three-debater, file-based v1 is archived in [`README-v1.md`](README-v1.md) and frozen on the [`v1` branch](../../tree/v1).
 >
 > **→ Read the [Design Philosophy / 设计哲学](docs/design-philosophy.md)** (bilingual) for the whole story — including *why* v1 became v2, and why v2 is now being rebuilt.
 
 > **Language note:** from **2026-10-26** the system's working language is **English** — rules, debate transcripts, final reports and post-mortem verdicts are written in English and stored as the source of truth; Chinese and other languages are rendered from them by a translation step, for reports and verdicts only (the debate itself is not translated). Everything produced before that date is Chinese-only and stays as it is.
+
+---
+
+<a id="drill-plan"></a>
+
+## 🎯 The drill plan: fewer runs, deeper inspection
+
+The rulebook kept growing, but a post-mortem score often couldn't tell us which manual an agent should have reached for, why it hadn't, or where its reasoning went wrong. So we began **drills**: choose a few representative historical moments, freeze the information available then, and let independent agents replay the debate one round at a time. The director can know the outcome; the debaters and their evidence replies must stay within what was knowable at the time. Reconstructing that boundary is itself part of the work.
+
+Each round follows a loop: build a defensible reference argument from the frozen material, compare it with what the agents actually did, revise the general mechanism, then rerun. **The reference argument stays with the reviewers. The agents must produce their own next attempt.** A stronger model's answer is also open to scrutiny.
+
+The first drill made the value of this painfully clear. Asking the agents to explain the market's recent moves helped Reaper identify downside risk in round one; over the next two rounds, concessions pushed it past Zealot into an even more optimistic view. Finding the risk and preserving a justified judgment were two separate problems. Following the branches exposed how partial refutations became excessive concessions, and how arbitration treated continuation and change differently.
+
+**Drills find the fault; statistics check whether it recurs.** Changes must also face later dates, rising and sideways markets, and windows kept out of the tuning process. We record findings, look for corroborating cases, and leave observation periods between changes. Better process behavior, better forecasts and better execution outcomes each need their own evidence.
+
+<details>
+<summary>🧪 <b>First drill walkthrough — November 7–9, 2026 (Chinese diagram; click to expand)</b></summary>
+
+![First Equipoise drill: round-by-round branches, corrections and reruns](images/drill-tree-2026-11-09.png)
+
+[Open the full-size diagram](images/drill-tree-2026-11-09.png). This is the historical record of the first drill through v3.6, including failed branches and revised acceptance criteria. Its model names and deployment labels refer to that experiment.
+
+</details>
+
+The immediate publication plan is to explain this work first. **Design details, formulas, models and code are still being organized together.** The public implementation remains v1; a future release will include the setup guidance needed for Codex or Claude Code to initialize it.
 
 ---
 
@@ -193,6 +218,10 @@ The latest milestones:
 
 ---
 
+## ✍️ Author & AI collaborators
+
+**Project author: Shuting Sun.** **Claude Code** contributed to development and earlier public releases; **Codex (OpenAI)** now maintains this public repository and prepares its documentation updates. AI collaborators are credited as they contribute, including through commit co-author trailers.
+
 ## ⚠️ Disclaimer
 
 This project is for research and personal use only. It does not constitute investment advice.
@@ -217,15 +246,40 @@ Questions and discussion welcome: **sst19910323@gmail.com**
 
 Equipoise 是一个基于大语言模型的多智能体量化分析框架。在给出任何决策之前，持**对立立场**的 agent 必须先完成一场结构化辩论。多数多智能体交易框架按**数据类型**分工（基本面、情绪、技术面），而 Equipoise 按**立场**分工。框架本身与市场无关，当前实现覆盖美股 / 欧股 / 日股 / 韩股。
 
-> **🚧 2026 年 10 月——一个转折点。** v2 这条线在 **2026-09-29** 跑完了最后一批生产场。第二天，一次推倒重来的 **v3.0 整体重建**开工——规则、编排、命名，全部在一份顶层设计下重做。它于 **2026-10-02** 切入生产，之后是 v3.1（10-08）、v3.2（10-17）和 v3.3（10-25：英文核心、重建的技术快照）；**2026-10-17**，项目启用真正的名字 **Equipoise**。细节见紧接着的 [v3.0 一节](#v3-重建)。
+> **🎯 2026 年 11 月——演习计划。** 当前的重点是逐回合拆开一场判断：它去找了什么信息，证据怎样改变看法，一个有道理的判断又在哪里丢掉了。下面的[演习计划](#drill-plan-zh)介绍这套方法，并附上第一期试验的分叉过程图。
 >
-> **代码快来了。** 此前这个仓库只开源了**思路**——设计哲学和这份 README——因为 v2 每周都在变，代码从来没到值得冻结的状态。v3 从一开始就是按"能公开"来建的：一棵规则树，一份两个引擎共用的编排协议。工作仓库已于 10-23 迁完新名字（路径、数据库、环境变量）；接下来就是脱敏后的代码发布。在那之前，可运行的参考代码仍是存档的 **v1**。
+> **开源整理中。** 设计细节、公式、模型和当前代码正在一起整理。这次主要更新 README，先把演习计划讲清楚，没有发布新版实现。仓库里可运行的参考代码仍是存档的 **v1**。
 
 > **这份 README 写的是什么。** 下面的正文写的仍是 **v2 版**最后运行时的样子——二元辩手 + 一位仲裁者，底层 Postgres，以 agent 原生方式运行；v3 的正文会和代码一起到。最初那套三辩手、基于文件的 v1 已存档在 [`README-v1.md`](README-v1.md)，并冻结在 [`v1` 分支](../../tree/v1)。
 >
 > **→ 完整来龙去脉（包括*为什么*从 v1 走到 v2、又为什么 v2 现在要重建）见 [设计哲学 / Design Philosophy](docs/design-philosophy.md)**（中英双语）。
 
 > **语言说明：** 自 **2026-10-26** 起，系统的工作语言是**英文**——规则、辩论记录、终报与复盘判词的原文都是英文，并以英文作为入库的真相；中文和其他语言由一道翻译步从原文渲染，只翻报告与判词（辩论过程不翻）。此前产出的内容仅中文，原样保留。
+
+---
+
+<a id="drill-plan-zh"></a>
+
+## 🎯 演习计划：少跑几场，多拆几层
+
+规则越攒越厚，复盘的一个总分却常常说不清：它当时该翻哪本秘籍、为什么没翻、推理在哪一步走偏。于是有了**演习**：挑几个典型历史节点，冻结当时可知的材料，让独立的辩手一回合一回合地重跑。导演可以知道结局，辩手和外呼答复都要守住当时的信息边界；怎样把这个边界还原好，本身就是演习的一部分。
+
+每回合形成一个循环：先根据冻结材料建立一份有依据的参考发言，再对照实际表现，改通用机制，然后重跑。**参考发言留在评审侧，不塞给辩手；下一次的结果，必须由它自己做出来。** 更强模型写的答案也一样要经得起检查。
+
+第一期就把这件事的价值暴露得很清楚。要求辩手先解释“最近谁在动、为什么动”，帮助 Reaper 在第一回合找到了下行风险；可随后的两回合，它一路让步，最后竟比 Zealot 还乐观。发现风险和保住有依据的判断，是两个不同的问题。沿着分叉追下去，才看清部分反驳怎样变成过量让步，仲裁又怎样对延续和变化用了不同的举证要求。
+
+**演习找病灶，统计查它是不是常见病。** 改动还要经过后续日期、上涨与震荡对照，以及没有参与调试的窗口检验。发现先记账，找其他案例印证，改完留观察期。过程是否改善、预测是否更准、操作结果是否更好，各自都要拿证据说话。
+
+<details>
+<summary>🧪 <b>第一期演习怎么走过来的——2026 年 11 月 7–9 日（点击展开）</b></summary>
+
+![Equipoise 首次演习：逐回合分叉、修正与重跑](images/drill-tree-2026-11-09.png)
+
+[查看原尺寸图](images/drill-tree-2026-11-09.png)。这张图记录首期演习到 v3.6 的历史过程，也保留了失败分支和验收口径的调整；图中的模型名称与部署标记均属于当时。
+
+</details>
+
+当前准备先把这套工作方法讲清楚。**设计细节、公式、模型和代码仍在一起整理。** 公开实现暂时保留 v1；后续代码发布时，再配上能让 Codex 或 Claude Code 带着完成初始化的指引。
 
 ---
 
@@ -387,6 +441,10 @@ BP = **反向传播**：辩论是前向推理，后验是对真实标签算误�
 </details>
 
 ---
+
+## ✍️ 作者与 AI 协作者
+
+**项目作者：Shuting Sun。** **Claude Code** 参与了开发及此前的开源整理；**Codex（OpenAI）** 现接手这个公开仓库的维护与文档更新。AI 协作者按实际参与记录署名，提交记录中也保留共同作者标记。
 
 ## ⚠️ 免责声明
 
