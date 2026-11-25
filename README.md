@@ -76,6 +76,18 @@ In the current deployment, restarting IBKR requires manual intervention using a 
 
 Browse the [screenshot gallery](docs/screenshots.md) for group dashboards, technicals, fundamentals, macro context, postcheck, and the duty loop.
 
+## Next: from a research dashboard to portfolio decisions
+
+The current dashboard provides neutral research. As the watchlist approaches 100 assets, even reading every final report becomes difficult for one person. The next major step is a capable AI that reads both the user's holdings and the research reports, treats those reports as high-confidence inputs, and produces a portfolio rebalancing plan. This design rests on the reports being sufficiently reliable.
+
+Today, rebalancing decisions are discussed with the AI. The intended progression is:
+
+1. **Discuss the plan.** Work through proposed changes with the AI and settle on a plan.
+2. **Execute systematically.** Gradually move toward routine execution of agreed plans.
+3. **Automate execution.** Eventually let the AI carry out portfolio changes automatically.
+
+This portfolio layer is a development direction; automated trading is not an available feature of the current public release.
+
 ## Design principles
 
 ### Natural layers
@@ -171,6 +183,18 @@ Equipoise 是一个基于大语言模型、用于量化市场分析的多智能�
 当前部署中，重启盈透需要人工通过手机配合。盈透离线期间，Hermes 暂停唤起股票辩论。这套安排的公开初始化说明仍在准备。
 
 [截图画廊](docs/screenshots.md) 展示了分组看板、技术面、基本面、宏观环境、后验复盘与值班调度。
+
+## 下一步：从研究看板到组合决策
+
+当前看板提供中立研究。随着关注标的接近 100 个，连逐份阅读最终报告，对一个人来说都开始吃力。接下来一个重要方向，是让能力更强的 AI 同时读取自己的持仓与研究报告，将报告作为高可信输入，输出组合层面的调仓计划。这一设计以报告足够可靠为前提。
+
+目前的方式是与 AI 商量调仓，计划逐步走向：
+
+1. **讨论方案。** 与 AI 一起推敲调整建议，形成认可的计划。
+2. **按计划执行。** 逐步减少临场反复讨论，过渡到按既定计划机械执行。
+3. **自动执行。** 最终让 AI 自动完成组合调整。
+
+这一组合层属于后续发展方向，自动交易尚不是当前公开版本具备的功能。
 
 ## 设计原则
 
