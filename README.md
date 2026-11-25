@@ -218,10 +218,6 @@ The latest milestones:
 
 ---
 
-## ✍️ Author & AI collaborators
-
-**Project author: Shuting Sun.** **Claude Code** contributed to development and earlier public releases; **Codex (OpenAI)** now maintains this public repository and prepares its documentation updates. AI collaborators are credited as they contribute, including through commit co-author trailers.
-
 ## ⚠️ Disclaimer
 
 This project is for research and personal use only. It does not constitute investment advice.
@@ -441,10 +437,6 @@ BP = **反向传播**：辩论是前向推理，后验是对真实标签算误�
 </details>
 
 ---
-
-## ✍️ 作者与 AI 协作者
-
-**项目作者：Shuting Sun。** **Claude Code** 参与了开发及此前的开源整理；**Codex（OpenAI）** 现接手这个公开仓库的维护与文档更新。AI 协作者按实际参与记录署名，提交记录中也保留共同作者标记。
 
 ## ⚠️ 免责声明
 
