@@ -50,7 +50,7 @@ class DebateEngine:
         # 1. 绝对路径解析
         self.models_config_path = str(PROJECT_ROOT / config_rel_path)
         self.data_config_path = str(PROJECT_ROOT / "config/data_sources.yaml")
-        self.prompts_dir = str(PROJECT_ROOT / "prompts")
+        self.prompts_dir = str(PROJECT_ROOT / "prompts" / "api")
         
         # 2. 初始化组件
         self.pm = PromptManager(base_dir=self.prompts_dir)
@@ -99,6 +99,9 @@ class DebateEngine:
         workflow.add_node("reaper_debate",  self.nodes.reaper_debate_node)
         workflow.add_node("fulcrum_debate", self.nodes.fulcrum_debate_node)
 
+        # Evidence Search 证据官 (fulcrum_debate → evidence_search → moderation; 关/非自搜标的 pass-through)
+        workflow.add_node("evidence_search", self.nodes.evidence_search_node)
+
         # Moderation (纯代码) + Finalize (Chronicler 复活, 仅做 synthesis)
         workflow.add_node("moderation",          self.nodes.moderation_node)
         workflow.add_node("chronicler_finalize", self.nodes.chronicler_finalize_node)
@@ -131,10 +134,11 @@ class DebateEngine:
             }
         )
 
-        # Debate 三方 → moderation
+        # Debate 三方 → 证据官 → moderation
         workflow.add_edge("zealot_debate",  "reaper_debate")
         workflow.add_edge("reaper_debate",  "fulcrum_debate")
-        workflow.add_edge("fulcrum_debate", "moderation")
+        workflow.add_edge("fulcrum_debate", "evidence_search")
+        workflow.add_edge("evidence_search", "moderation")
 
         # chronicler_finalize → 三方并行签章
         workflow.add_edge("chronicler_finalize", "zealot_signoff")

@@ -1,0 +1,23 @@
+[Unit]
+Description=IB Gateway (headless, driven by IBC)
+Requires=xvfb.service
+After=xvfb.service network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=10min
+StartLimitBurst=1
+
+[Service]
+Type=simple
+Environment=DISPLAY=:1
+Environment=HOME=/root
+WorkingDirectory=/opt/ibc
+ExecStart=/opt/ibc/gatewaystart.sh -inline
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=30
+SendSIGKILL=yes
+# A new login requires human 2FA. Never create an unattended retry loop.
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

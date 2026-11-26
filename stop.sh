@@ -1,12 +1,12 @@
 #!/bin/bash
-# Stop Apex Quant services. 三段式杀: TERM -> wait -> KILL，再 pkill 兜底孤儿进程
+# Stop Equipoise services. 三段式杀: TERM -> wait -> KILL，再 pkill 兜底孤儿进程
 
-cd /opt/apex_quant
+cd /opt/equipoise
 
-JOBS=("apex_quant_entry" "data_scheduler" "horizon_sentinel")
+JOBS=("equipoise_entry" "horizon_sentinel")
 TERM_WAIT_SEC=5   # 收到 TERM 后宽限时间，超时强杀
 
-echo ">>> Stopping Apex Quant Services..."
+echo ">>> Stopping Equipoise Services..."
 
 kill_pid() {
     local pid="$1"
@@ -52,13 +52,14 @@ for job in "${JOBS[@]}"; do
 
     # Step 2: pkill 兜底 — 抓 PID 文件没记录到的孤儿进程 (例如手动 nohup 起的)
     # -f 匹配完整命令行；用 "$job.py" 避免误伤其它进程
-    ORPHAN_PIDS=$(pgrep -f "$job\.py" || true)
-    if [[ -n "$ORPHAN_PIDS" ]]; then
-        echo "⚠️  Found orphan process(es) for $job: $ORPHAN_PIDS, force-killing"
-        for opid in $ORPHAN_PIDS; do
-            kill_pid "$opid" "$job (orphan)"
-        done
-    fi
+    # 2026-10-23: 只杀真正跑该任务的 venv python, 不杀命令行里恰好带这个名字的别的进程(如正在跑本脚本的会话)
+    for opid in $(pgrep -f "$job\.py" || true); do
+        [[ "$opid" == "$$" || "$opid" == "$PPID" ]] && continue
+        exe=$(readlink -f "/proc/$opid/exe" 2>/dev/null || true)
+        [[ "$exe" == /opt/equipoise/venv/bin/python* ]] || continue
+        echo "⚠️  Found orphan process $opid for $job ($exe), stopping"
+        kill_pid "$opid" "$job (orphan)"
+    done
 done
 
 echo ">>> Done."

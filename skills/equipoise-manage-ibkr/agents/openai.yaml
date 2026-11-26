@@ -1,0 +1,4 @@
+interface:
+  display_name: "Equipoise IBKR Operations"
+  short_description: "Safely operate and diagnose Equipoise IBKR Gateway"
+  default_prompt: "Use $equipoise-manage-ibkr to inspect, stop, start, or diagnose the Equipoise IBKR Gateway safely."

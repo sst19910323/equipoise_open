@@ -1,0 +1,69 @@
+# models.yaml 模板 —— 真文件 config/models.yaml 已被 .gitignore 排除, 不进 git。
+# 用法: cp config/models.example.yaml config/models.yaml, 然后填 api_key。
+# 真 key 只存本地 + 服务器 /opt/equipoise/config/models.yaml, 换机器手动拷。
+default_model: "qwen3.6-plus"
+
+models:
+  # --- Qwen 配置 (DashScope / 兼容模式) ---
+  qwen3-max:
+    name: "qwen3-max"
+    api_key: ""
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model_id: "qwen3-max"
+    temperature: 0.8
+    timeout: 180
+
+  qwen3.6-plus:
+    name: "qwen3.6-plus"
+    api_key: ""
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model_id: "qwen3.6-plus"
+    temperature: 0.3
+    timeout: 180
+
+  # qwen3.6-max: qwen3-max 的提升版本 (preview 阶段), 给 Fulcrum 用
+  qwen3.6-max:
+    name: "qwen3.6-max"
+    api_key: ""
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model_id: "qwen3.6-max-preview"
+    temperature: 0.3
+    timeout: 180
+
+  # --- Deepseek 配置 (给 zealot/reaper 用) ---
+  deepseek:
+    name: "deepseek"
+    api_key: ""
+    base_url: "https://api.deepseek.com/v1"
+    model_id: "deepseek-v4-flash"
+    temperature: 0.8
+    timeout: 180
+
+  # --- Grok 配置 (OpenAI 兼容) ---
+  grok: 
+    name: "Grok API Test (OpenAI Compatible)"
+    service: "Grok"
+    api_key: ""  # Set your own key locally if using this provider.
+    base_url: "https://api.x.ai/v1"
+    model_id: "grok-4-fast-reasoning"
+    
+  # --- Gemini 配置 (OpenAI 兼容) ---
+  gemini: 
+    name: "Gemini API Test (OpenAI Compatible)"
+    service: "Gemini"
+    api_key: ""
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
+    model_id: "gemini-2.5-flash"
+
+  # --- Linkup 搜索 API (证据官 linkup 模式: 只搜, 返回原文+来源; 概述/结论由 deepseek 写) ---
+  linkup:
+    name: "Linkup Search"
+    api_key: ""
+
+  kimi:
+    name: "kimi"
+    api_key: ""
+    base_url: "https://api.moonshot.cn/v1"
+    model_id: "kimi-k2-thinking-turbo"
+    temperature: 0.6
+    timeout: 180

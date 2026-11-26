@@ -1,0 +1,145 @@
+# -----------------------------------------------------------------
+# 文件路径: prompts/formats/final_report_output.yaml
+# 最终报告输出格式（XML版 - 仅Chronicler）
+# 单中文核心版；未来若需多语言，走独立翻译层，不在 Chronicler 端产出。
+# -----------------------------------------------------------------
+
+final_report_output: |
+  请严格按以下XML格式输出，不要输出任何XML以外的内容：
+
+  <final_report>
+    <debate_summary><![CDATA[整场辩论的总结]]></debate_summary>
+
+    <mentality>
+      <item name="buy_the_dip" probability="0.7"/>
+      <item name="wait_for_confirmation" probability="0.3"/>
+    </mentality>
+
+    <reasoning>
+      <key_drivers>
+        <driver direction="bullish" category="technical" weight="high">
+          <factor><![CDATA[驱动因素名称]]></factor>
+          <evidence><![CDATA[具体证据1]]></evidence>
+          <evidence><![CDATA[具体证据2]]></evidence>
+        </driver>
+      </key_drivers>
+      <risks>
+        <risk probability="medium" impact="high">
+          <description><![CDATA[风险描述]]></description>
+          <mitigation><![CDATA[缓释措施]]></mitigation>
+          <trigger><![CDATA[监控触发条件]]></trigger>
+        </risk>
+      </risks>
+    </reasoning>
+
+    <risk_management>
+      <stop_loss><![CDATA[止损条件或价位]]></stop_loss>
+      <take_profit><![CDATA[止盈条件或价位]]></take_profit>
+      <max_drawdown_tolerance>X%</max_drawdown_tolerance>
+      <review_triggers>
+        <trigger><![CDATA[复盘触发条件1]]></trigger>
+        <trigger><![CDATA[条件2]]></trigger>
+      </review_triggers>
+    </risk_management>
+
+    <action>[0-100整数]</action>
+    <operation_type>[操作类型枚举]</operation_type>
+    <operation_target>[raw_data中该标的的真实价格数字]</operation_target>
+    <operation_volume>[仓位规模枚举]</operation_volume>
+
+    <short_term>
+      <direction>[上行/震荡/下行 三选一]</direction>
+      <target>[预期到达价，数字]</target>
+      <horizon_days>[交易日整数]</horizon_days>
+      <rationale><![CDATA[一句话核心理由]]></rationale>
+    </short_term>
+
+    <next_review>
+      <recommend_after>2026-05-22T13:30:00Z</recommend_after>
+      <reason><![CDATA[财报 2026-05-22 前最后复盘，等业绩与 AI capex 叙事验证]]></reason>
+    </next_review>
+
+    <dissent>
+      <zealot_final_action>[Zealot最终action]</zealot_final_action>
+      <zealot_reservation><![CDATA[Zealot的保留意见，若无填"无"]]></zealot_reservation>
+      <reaper_final_action>[Reaper最终action]</reaper_final_action>
+      <reaper_reservation><![CDATA[Reaper的保留意见，若无填"无"]]></reaper_reservation>
+      <fulcrum_final_action>[Fulcrum最终action]</fulcrum_final_action>
+      <fulcrum_reservation><![CDATA[Fulcrum的保留意见，若无填"无"]]></fulcrum_reservation>
+    </dissent>
+
+    <statement><![CDATA[最终高确信度宣言]]></statement>
+  </final_report>
+
+  ## 字段说明
+
+  ### 辩论总结
+  - debate_summary: 整场辩论的总结，必须包括各方立场的演变轨迹、关键争议点、达成的共识、保留的分歧，以及最终action和operation的综合理由（基于三方立场的权衡）
+
+  ### 心态
+  - mentality: 1-5种最终心态及概率，列出显著项即可（总和通常为1，若心态复杂可略小于1，忽略极小项）
+    可选心态name: buy_the_dip / fomo_buy / profit_taking / cut_losses_aggressively / cut_losses_reluctantly / hold_and_ride_profit / trapped_hold / wait_for_confirmation / wait_and_see / avoid_uncertainty / bottom_fishing / short_squeeze_chase / sell_on_strength / hedge_position / average_down / average_up / all_in / rotate_sector / deleveraging / contrarian_bet
+
+  ### 逻辑支撑
+  - key_drivers: 核心驱动因素
+      * direction属性: bullish / bearish
+      * category属性: technical / fundamental / macro / news
+      * weight属性: high / medium / low
+      * evidence: 必须是raw_data中的具体数据，严禁模糊表述
+  - risks: 风险因素
+      * probability / impact属性: high / medium / low
+      * mitigation: 缓释措施
+      * trigger: 需要监控的触发条件
+
+  ### 风控
+  - risk_management: 止损/止盈条件必须明确具体（如"跌破$150"），不能模糊
+
+  ### 核心决策
+  - action: 0-100整数, 综合战略战术的信心刻度 (与 operation_* 共同承载综合 view)。0=极端看空(悲观), 50=中性观望, 100=极端看涨(乐观)
+  - operation_type: MARKET_ENTRY / LIMIT_ENTRY / HOLD_NEUTRAL / TRIM_POSITION / LIQUIDATE_NOW
+  - operation_target: 交易操作必填具体价格锚点（数字）。
+      * 市价单：填当前价作为锚点
+      * 限价单：填基于raw_data与三方意见综合判断后的合理限价位
+      * Hold：填"N/A"或关键支撑价
+      * **仅当 symbol == GENERAL 时**：填三价位字符串 `SPY=X; QQQ=Y; DIA=Z`（分号分隔，等号连接，2位小数）。**SPY/QQQ/DIA 作为单一 ETF 被分析时仍填单一数字, 不要混淆**
+  - operation_volume: PILOT_SIZE / STANDARD_SIZE / AGGRESSIVE_SIZE / "N/A"
+
+  ### 短线战术判断（与 action 正交补充）
+  - short_term: 综合三方辩论后的**数日级**战术判断。**详见宪法第 11 节**。
+      * direction: 上行 / 震荡 / 下行（三选一）
+      * target: 数字；GENERAL 用 `SPY=X; QQQ=Y; DIA=Z`
+      * horizon_days: 整数交易日数（典型 2-14）
+      * rationale: 用 CDATA 包裹，一句话核心理由
+
+  ### next_review —— 声明"这一标的下次什么时候再来看"，给调度器(Hermes)和人读
+  只管下一次（下下次到那时候再说）。两个字段：
+  - recommend_after: 下一次复盘的 UTC 时刻，格式 `YYYY-MM-DDTHH:MM:SSZ`。
+      以本场"当前时点（数据快照）"为基准往后推，越紧迫排得越近。参考档位（dt time，按需拿捏）：
+        · 高频：当天晚些 ~ 次日，甚至日内多次（临近财报 / 逼近关键价位 / 剧烈波动）
+        · 中频：约 3 天后（常规跟踪）
+        · 低频：约 1 周后（逻辑稳定、低波动）
+      具体几点按本标的情况自定即可。
+  - reason: 一句话说清为什么是这个时间（财报日 / 等某事件 / 价格临界 / 常规复盘等），给 Hermes 和人看懂即可。
+
+  ### 分歧记录
+  - dissent: 记录三方(Zealot/Reaper/Fulcrum)的最终立场及保留意见
+
+  ### 最终宣言
+  - statement: 一句话高确信度宣言，概括最终决策的核心理由
+
+  ## 重要原则
+  - evidence必须来自raw_data，严禁编造
+  - 报告必须反映辩论的进化轨迹，而非你的独立判断
+  - 决策形成原则遵循shared_rules中的"最终决策框架"
+
+signoff_output: |
+  请严格按以下XML格式输出，不要输出任何XML以外的内容：
+
+  <signoff>
+    <final_action>75</final_action>
+    <reservation><![CDATA[对史官最终报告的保留意见；若无异议可留空或简单确认]]></reservation>
+  </signoff>
+
+  ## 字段说明
+  - final_action: 你的最终action数值（0-100整数），代表你在整场辩论结束后的最终立场
+  - reservation: 对史官最终报告的保留意见（一两句话）；若无异议可留空或简单确认

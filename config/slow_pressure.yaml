@@ -1,0 +1,5 @@
+# Slow-pressure page (datalayer/pg/slow_pressure.py). The series are fetched and stored daily regardless.
+# in_material: whether data preparation appends the page to the US economic hand-off file every session reads
+# (generals, sector ETFs and single names alike). Turning it on changes what the debaters see = a behaviour change:
+# record the cut line in docs/MAJOR-CHANGES.md when you do. Off until the owner says so (v3.8 observation window).
+in_material: false

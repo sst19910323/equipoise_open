@@ -1,0 +1,179 @@
+{
+  "shared": "Frozen November 18 at 14:29:59 UTC before the US regular open. D1 is the November 18 regular session. P0 is the November 17 regular close for each issuer. SMH closed at 460.10, down 5.6% since November 9, and QQQ at 656.95, down 3.3%; the common selloff weakens any claim that a single issuer caused the move. Nvidia reported after the November 17 21:00 UTC regular close. The November 17 21:38 UTC archived release coverage, first seen by 23:00 UTC, reports $115.8bn revenue and a $130bn outlook. Coverage at 21:41-21:53 UTC reports an above-consensus outlook and an initial stock rise. Those headlines preceded the cutoff, but the regular-session OHLC ends before the release. Treat the after-hours response as qualitative and await regular-session acceptance. This provides evidence for current AI infrastructure demand, while persistent upside requires guidance to convert into funded orders. Reuters pre-report market coverage and Anthropic debut attention establish context without an IPO outcome (N-d6cc48d72f0659e7, N-3011030f3d738952). Six observed close-to-close moves and seven intraday ranges provide a scale, with too little history for stable volatility inference. Conditional USD closing-price estimates use the observed swing levels and roughly one to two ordinary session moves for early repricing, then assume partial mean reversion in the central paths and multi-session follow-through in the tails. Probabilities are judgmental, and common catalysts can correlate outcomes across names.",
+  "members": {
+    "MU": {
+      "thesis": "P0 $712.42. Mild downside skew. The 12.2% giveback from the November 11 close and November 17 recovery from $666.88 make a fresh sell case depend on earnings exposure beyond the existing selloff. A NAND price forecast cut raises the risk of lower realized storage pricing if additional supply arrives ahead of demand. The 2027 warning matters here only if estimates adjust within 15 sessions. A refusal to dismiss DRAM litigation adds headline sensitivity, with no finding of liability in the archived report. The prior $778-$811 closing area and the last session low frame the tails; daily close-return sample SD was 6.5% and average high-low range was 6.2% of close.",
+      "counterevidence": "The archive reports tight AI memory availability and a shipping Micron design win in Oxide servers, with purchase volume unspecified. Nvidia guidance supports accelerator-linked memory demand if the production outlook converts to HBM orders. NAND pressure leaves that HBM channel open. The November 17 lower wick shows recovery from the low before Nvidia reported.",
+      "falsifier": "Corroborated firm near-term NAND contract pricing or HBM allocation gains sufficient to offset a projected NAND margin decline would remove the downside skew. A sustained close above the November 13 close near $778 following those revisions would support follow-through.",
+      "refs": [
+        "N-7fc9f5ee598eb426",
+        "N-978eff4b423318b4",
+        "N-076d5c14614917ba",
+        "N-91e05b3e4c2b5a74",
+        "N-dfeef71e5f56b921"
+      ],
+      "paths": [
+        {
+          "label": "Storage estimates reset",
+          "p": 0.32,
+          "d3": 676,
+          "d5": 657,
+          "d15": 625
+        },
+        {
+          "label": "HBM offsets softer storage",
+          "p": 0.46,
+          "d3": 716,
+          "d5": 719,
+          "d15": 718
+        },
+        {
+          "label": "Memory pricing strengthens",
+          "p": 0.22,
+          "d3": 754,
+          "d5": 773,
+          "d15": 811
+        }
+      ]
+    },
+    "NVDA": {
+      "thesis": "P0 $155.46. The ticker lost 13.0% since November 9 versus SMH down 5.6%, leaving room for a rebound on the disclosed beat and raise. The post-release report of a rise favors a higher early center. For D15 I retain a wider downside tail: leadership disruption can affect customer commitments and demand visibility if confidence in delivery or financing weakens. The archive lacks current exposure and bookings detail needed to assign a large directional edge. Six daily close moves had 3.1% sample SD against a 6.1% average intraday range; the $148.80 recent low and $173.73 November 11 close anchor the early tails, with further distance conditional on sustained revisions.",
+      "counterevidence": "Above-consensus forward guidance is direct evidence against an immediate demand collapse. The downside remains plausible if the upgrade was narrower than headline numbers imply or becomes harder to finance. Reuters reports that Huang is open to a return and a December congressional appearance. Those headlines leave leadership resolution uncertain.",
+      "falsifier": "Broad increases in forward estimates backed by disclosed customer funding and firm orders, alongside regular-session acceptance above the November 13 high near $170, would materially shrink the downside tail. Guidance support would fade if those revisions were reversed on disclosed order or financing weakness.",
+      "refs": [
+        "N-dfeef71e5f56b921",
+        "N-5efbc208d7106a87",
+        "N-9f018444c81f1d59",
+        "N-d572f07949fbb054",
+        "N-168210070e12dc5d"
+      ],
+      "paths": [
+        {
+          "label": "Guidance fades on customer risk",
+          "p": 0.26,
+          "d3": 147,
+          "d5": 141,
+          "d15": 130
+        },
+        {
+          "label": "Beat supports a partial rebound",
+          "p": 0.49,
+          "d3": 162,
+          "d5": 163,
+          "d15": 161
+        },
+        {
+          "label": "Forward estimates rise broadly",
+          "p": 0.25,
+          "d3": 172,
+          "d5": 176,
+          "d15": 185
+        }
+      ]
+    },
+    "AMD": {
+      "thesis": "P0 $503.41. Modest downside skew. The November 12 close of $585.30 was 15.1% above November 9 and lost 14.0% by November 17, so much of the local rerating already reversed. The remaining risk is that licensing delays defer a portion of accelerator shipments to certain affected customers and that Nvidia demand strength comes with fewer AMD share gains than expected. The archive lacks a quantified AMD exposure bridge. The $480.50 November 17 low and $534.06 November 13 close frame early paths, with 6.3% daily close-return SD and a 7.5% average range.",
+      "counterevidence": "The same Nvidia guide can signal a larger industry order pool. Commentary about a higher CPU share in AI systems supports a separate server CPU channel, without quantifying AMD wins. A leadership transition also creates openings for rival accelerators if customers diversify. That possibility warrants a rebound branch while the archive lacks bookings or confirmed share shifts.",
+      "falsifier": "Firm AMD accelerator order conversions or licensing clearance protecting shipment timing, paired with a verified server CPU estimate raise, would materially weaken the downside case. A sustained close above $534 would support the market acceptance of such a revision.",
+      "refs": [
+        "N-fcdf1576e3a4fce9",
+        "N-d3015e8d4d1801b3",
+        "N-2d03bbd029901236",
+        "N-b28d0f1812161fdb",
+        "N-dfeef71e5f56b921"
+      ],
+      "paths": [
+        {
+          "label": "Deployment deferrals or weaker share capture",
+          "p": 0.32,
+          "d3": 478,
+          "d5": 462,
+          "d15": 440
+        },
+        {
+          "label": "CPU and AI demand absorb drag",
+          "p": 0.46,
+          "d3": 510,
+          "d5": 505,
+          "d15": 500
+        },
+        {
+          "label": "Accelerator wins and server CPU upgrade",
+          "p": 0.22,
+          "d3": 539,
+          "d5": 554,
+          "d15": 590
+        }
+      ]
+    },
+    "AVGO": {
+      "thesis": "P0 $341.60. Hold around this price. AVGO retained a 6.9% gain since November 9 against the SMH decline and rose on November 17 while SMH fell, leaving room for relative gains to unwind if diversification into custom chips gets ahead of committed deployments. Nvidia guidance can support complement demand for networking and at the same time pressure the relative case for custom silicon share gains. The $330.13 recent low and $364.36 November 12 close anchor the early paths, against 4.4% close-return SD and a 4.6% average range.",
+      "counterevidence": "Archived coverage points to custom AI accelerators and networking growth. Custom accelerator demand depends on customer programs and networking can also benefit from expanding clusters built around merchant GPUs. The coverage gives limited detail on incremental committed volume or timing, which restrains both the bullish inference and an outright short view.",
+      "falsifier": "A disclosed customer-backed custom silicon ramp with scheduled volume or a measurable AI networking backlog increase would undercut the unwind thesis. A sustained close above $364 following a corroborated estimate raise would support the upside path.",
+      "refs": [
+        "N-f2018d0026baad37",
+        "N-1bf2cac7891503b6",
+        "N-dfeef71e5f56b921"
+      ],
+      "paths": [
+        {
+          "label": "Custom deployments slip and relative bid fades",
+          "p": 0.27,
+          "d3": 327,
+          "d5": 318,
+          "d15": 305
+        },
+        {
+          "label": "Custom and networking outlook holds",
+          "p": 0.48,
+          "d3": 344,
+          "d5": 344,
+          "d15": 345
+        },
+        {
+          "label": "Committed AI volumes rise",
+          "p": 0.25,
+          "d3": 361,
+          "d5": 369,
+          "d15": 387
+        }
+      ]
+    },
+    "TSM": {
+      "thesis": "P0 $359.69. Hold with a wide tail on each side. TSM fell 13.0% from its November 11 close and underperformed SMH since November 9. October record sales establish recent strength and were reported days before the latest selloff, so the decline provides little evidence about reception to a fresh sales surprise. ADR downside can persist if the Nvidia transition or an AI capex funding shock delays orders enough to leave advanced node or packaging slots idle. The archive does not establish such a delay. A $353.50 November 17 low, $373.45 prior close, and $398.73 November 13 close scale the paths against 3.8% daily close-return SD and a 3.8% average range.",
+      "counterevidence": "Strong recent sales and Nvidia guidance support utilization. TSM may capture foundry and packaging spend from alternative customers and chip designs if market share shifts. This offsets single-customer uncertainty if workloads still grow and the capacity slots are transferable. Aggregate revenue and an accelerator guide give limited information about allocation through the forecast window.",
+      "falsifier": "Evidence that advanced-node wafer starts and packaging bookings remain firm across major customers, with alternative volumes taking up any displaced slots on schedule, would weaken the idle-capacity premise. A sustained close above $373.45 on a corroborated booking update would support repricing.",
+      "refs": [
+        "N-bf12552ff52c73e9",
+        "N-31fc4b27175968ae",
+        "N-9862881114fe4901",
+        "N-41b9600225ca1633",
+        "N-dfeef71e5f56b921"
+      ],
+      "paths": [
+        {
+          "label": "Wafer or packaging demand deferred",
+          "p": 0.27,
+          "d3": 345,
+          "d5": 337,
+          "d15": 318
+        },
+        {
+          "label": "Orders broadly hold",
+          "p": 0.48,
+          "d3": 366,
+          "d5": 369,
+          "d15": 365
+        },
+        {
+          "label": "Broader advanced-node allocation gains",
+          "p": 0.25,
+          "d3": 379,
+          "d5": 388,
+          "d15": 406
+        }
+      ]
+    }
+  },
+  "request": "Find a dated, cutoff-eligible bridge from Nvidia guidance to end-customer funded orders or delivery schedules, with exposure by component if disclosed. Identify any committed accelerator, HBM, networking or advanced packaging volume versus deferred or license-dependent volume, and report which components the archived evidence leaves unknown."
+}

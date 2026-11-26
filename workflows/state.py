@@ -72,6 +72,14 @@ class DebateState(TypedDict):
     fulcrum_messages:    List[Dict[str, str]]
     chronicler_messages: List[Dict[str, str]]
 
+    # --- 8. 证据官搜索 (Evidence Officer / Grounding, V9.8) ---
+    # evidence_search 节点(fulcrum_debate→evidence_search→moderation)写; debate 节点读注入。
+    # 整体替换语义(非 operator.add): 节点自己读旧值拼新值返回完整 list。
+    search_requests:      Dict[str, str]        # 本轮三方各自的 search_request 原文
+    evidence:             List[Dict[str, Any]]  # 累积证据 list(现喂下一轮, 自身看完整含 detailed)
+    search_rounds_used:   int                   # 已触发搜索的轮数(空请求的轮不计), 预算上限见配置
+    evidence_generated_at: Optional[str]        # 最近一批证据生成时刻(UTC ISO), 报告记它复现
+
 
 def create_initial_state(
     context_type: str,
@@ -120,4 +128,10 @@ def create_initial_state(
         reaper_messages=[],
         fulcrum_messages=[],
         chronicler_messages=[],
+
+        # 证据官搜索（初始为空/0；evidence_search 节点维护）
+        search_requests={},
+        evidence=[],
+        search_rounds_used=0,
+        evidence_generated_at=None,
     )

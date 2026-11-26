@@ -39,6 +39,7 @@ DEFAULT_RESPONSE = {
     "short_term": dict(DEFAULT_SHORT_TERM),
     "summary_statement": "[解析失败]",
     "analysis_text": "[解析失败]",
+    "search_request": "",  # 想让证据官搜的疑问; 空=没有/未启用搜索
 }
 
 
@@ -69,7 +70,12 @@ def parse_debate_xml(raw_text: str, role: str = "unknown") -> Dict[str, Any]:
     if result is None:
         logger.warning(f"[XMLParser][{role}] Strict XML parse failed, trying regex fallback.")
         result = _parse_regex_fallback(raw_text, role)
-    
+
+    # 第2.5层: JSON兜底 (模型偶尔无视XML铁律、吐JSON对象——内容是好的, 别丢)
+    if result is None:
+        logger.warning(f"[XMLParser][{role}] Regex failed, trying JSON fallback (model emitted JSON not XML).")
+        result = _parse_json_fallback(raw_text, role)
+
     # 第三层: 默认值兜底
     if result is None:
         logger.error(f"[XMLParser][{role}] All parsing failed. Using defaults.")
@@ -117,6 +123,7 @@ def _parse_xml_strict(xml_str: str, role: str) -> Optional[Dict[str, Any]]:
             "operation_target", "operation_volume",
             "summary_statement", "analysis_text", "decision",
             "wants_continue",  # 三方自决要不要进入下一轮
+            "search_request",  # 想让证据官搜的疑问 (CDATA, ET 透明取文本)
         ]
         
         for field in simple_fields:
@@ -183,7 +190,7 @@ def _parse_regex_fallback(text: str, role: str) -> Optional[Dict[str, Any]]:
             extracted_count += 1
     
     # CDATA字段: <field><![CDATA[...]]></field> 或 <field>...</field>
-    for field in ["summary_statement", "analysis_text"]:
+    for field in ["summary_statement", "analysis_text", "search_request"]:
         # 先尝试CDATA
         cdata_pattern = rf'<{field}>\s*<!\[CDATA\[(.*?)\]\]>\s*</{field}>'
         match = re.search(cdata_pattern, text, re.DOTALL)
@@ -242,6 +249,71 @@ def _parse_regex_fallback(text: str, role: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _parse_json_fallback(text: str, role: str) -> Optional[Dict[str, Any]]:
+    """模型无视XML铁律、直接吐JSON对象时的兜底。
+    支持 ```json 代码块包裹、<response>{...}</response> 包裹、或裸JSON。
+    JSON字段名与内部dict几乎一一对应, 仅 mentality->preliminary_mentality 需改名。"""
+    if not text:
+        return None
+    # 去掉markdown代码块围栏 (```json / ```)
+    stripped = re.sub(r'```(?:json)?\s*', '', text)
+    stripped = re.sub(r'```', '', stripped)
+    # 若被 <response>...</response> 包裹, 取内层
+    m = re.search(r'<response\b[^>]*>(.*?)</response>', stripped, re.DOTALL)
+    if m:
+        stripped = m.group(1)
+    # 抓第一个平衡的 {...} 块
+    start = stripped.find('{')
+    if start < 0:
+        return None
+    depth = 0
+    end = -1
+    for i in range(start, len(stripped)):
+        ch = stripped[i]
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+    if end < 0:
+        return None
+    try:
+        obj = json.loads(stripped[start:end])
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+
+    result: Dict[str, Any] = {}
+    # 简单字段直接搬 (存在才搬, 让 _validate_and_fix 补缺)
+    for field in ("debate_intensity", "action", "operation_type", "operation_target",
+                  "operation_volume", "summary_statement", "analysis_text",
+                  "decision", "wants_continue", "search_request"):
+        if field in obj and obj[field] is not None:
+            result[field] = obj[field]
+    # mentality -> preliminary_mentality
+    mentality = obj.get("preliminary_mentality") or obj.get("mentality")
+    if isinstance(mentality, list) and mentality:
+        items = []
+        for it in mentality:
+            if isinstance(it, dict) and it.get("name"):
+                items.append({"name": str(it["name"]).strip(),
+                              "probability": _safe_float(it.get("probability", 0.5), 0.5)})
+        if items:
+            result["preliminary_mentality"] = items
+    # short_term 子对象
+    st = obj.get("short_term")
+    if isinstance(st, dict):
+        result["short_term"] = {k: st.get(k, v) for k, v in DEFAULT_SHORT_TERM.items()}
+
+    if not result:
+        return None
+    logger.info(f"[XMLParser][{role}] JSON fallback recovered {len(result)} fields.")
+    return result
+
+
 def _extract_short_term(elem) -> Dict[str, Any]:
     """从<short_term>元素提取结构化dict（strict XML路径用）。"""
     st = dict(DEFAULT_SHORT_TERM)
@@ -298,6 +370,13 @@ def _validate_and_fix(data: Dict[str, Any], role: str) -> Dict[str, Any]:
     # analysis_text
     if "analysis_text" not in data or not data["analysis_text"]:
         data["analysis_text"] = "[未提供]"
+
+    # search_request: 规整为字符串, 空=没有想搜的/未启用搜索 (不塞占位符)
+    sr = str(data.get("search_request", "") or "").strip()
+    # 容错: 模型可能原样回吐占位说明, 视作空
+    if sr.startswith("想让证据官") or sr in ("N/A", "无", "（无）", "(无)"):
+        sr = ""
+    data["search_request"] = sr
     
     # preliminary_mentality
     if "preliminary_mentality" not in data or not data["preliminary_mentality"]:

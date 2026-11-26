@@ -1,18 +1,21 @@
 #!/bin/bash
-# Start Apex Quant services. 起前清场 + 启动后立刻验证存活 + 失败时打印 log 尾部
+# Start Equipoise services. 起前清场 + 启动后立刻验证存活 + 失败时打印 log 尾部
 
-cd /opt/apex_quant
+cd /opt/equipoise
 
 VENV=./venv/bin/python
 
 mkdir -p logs pids
 
-JOBS=("apex_quant_entry" "data_scheduler" "horizon_sentinel")
+# [2026-06-15] data_scheduler + horizon_sentinel 退役 → 调度全交隔壁 Hermes。
+# 本机只留后端 API; 辩论由 Hermes 触发 run_one_debate.py, 数据/新闻刷新也 Hermes 驱动。
+# 要临时手动跑旧调度: nohup ./venv/bin/python -u horizon_sentinel.py & (自行管理)。
+JOBS=("equipoise_entry")
 API_PORT=8001
-API_JOB="apex_quant_entry"
+API_JOB="equipoise_entry"
 HEALTH_WAIT_SEC=3   # 启动后等多久再验证存活
 
-echo ">>> Starting Apex Quant Services..."
+echo ">>> Starting Equipoise Services..."
 
 for job in "${JOBS[@]}"; do
     PID_FILE="pids/$job.pid"

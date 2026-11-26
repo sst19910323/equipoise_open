@@ -132,12 +132,46 @@ class ParliamentNodes:
         return "\n\n".join(parts)
 
     # =========================================================================
+    # 证据官搜索 (Evidence Officer / Grounding) 辅助
+    # =========================================================================
+
+    def _search_state(self, symbol: str) -> Dict[str, Any]:
+        """读 evidence_search 总开关, 判断本次是否搜索 + 预算上限。失败 → 安全关闭。
+        enabled 一个开关全标的统一(开就全开/关就全关), 不再按标的挑。"""
+        try:
+            from workflows.evidence_officer import load_search_cfg
+            cfg = load_search_cfg()
+            active = bool(cfg.get("enabled"))
+            return {"active": active, "max_rounds": int(cfg.get("max_rounds", 3) or 3),
+                    "model": cfg.get("model", "gemini-3.5-flash")}
+        except Exception:
+            return {"active": False, "max_rounds": 3, "model": "gemini-3.5-flash"}
+
+    def _fmt_evidence(self, evidence: List[Dict[str, Any]]) -> str:
+        """累积证据 → 注入辩论的文本(自身看完整: task+simple+detailed; source 不给 AI)。"""
+        if not evidence:
+            return ""
+        blocks = []
+        for i, it in enumerate(evidence, 1):
+            task     = (it.get("task") or "").strip()
+            simple   = (it.get("simple") or "").strip()
+            detailed = (it.get("detailed") or "").strip()
+            seg = f"### 证据{i}：{task}\n**结论**：{simple}"
+            if detailed:
+                seg += f"\n**前因后果/时间线**：{detailed}"
+            blocks.append(seg)
+        return "\n\n".join(blocks)
+
+    # =========================================================================
     # 1. Init Nodes — 建立三辩论者对话线程
     # =========================================================================
 
     def _build_init_messages(self, agent: str, state: DebateState) -> List[Dict[str, str]]:
-        """Z/R/F初始化：system=宪法+人设，user=格式+原始数据+初始任务"""
+        """Z/R/F初始化：system=宪法+人设+搜索开关，user=格式+原始数据+初始任务"""
         system_content = self.pm.get_system_prompt(agent)
+        search_note = self.pm._search_toggle_note(state.get('symbol', ''))
+        if search_note:
+            system_content += f"\n\n{search_note}"
         output_format  = self.pm.get_output_format(agent, "init")
         task_content   = self.pm.get_task_prompt("init", state['context_type'], {
             "symbol": state.get('symbol', 'UNKNOWN'),
@@ -216,6 +250,31 @@ class ParliamentNodes:
             f"## 第{turn}轮辩论 | 标的：{symbol}\n\n"
             f"## 完整辩论记录\n{history_str}"
         )
+
+        # 证据官查证结果(若有): 现喂下一轮, 自身看完整(含 detailed)
+        evidence_str = self._fmt_evidence(state.get('evidence', []))
+        if evidence_str:
+            incremental_msg += (
+                f"\n\n## 证据官（Scout）查证结果\n"
+                f"以下是证据官就此前各方疑问做的外部搜索查证, 请据此更新判断（注意时间线与信源把关）：\n\n"
+                f"{evidence_str}"
+            )
+
+        # 搜索预算: 纯机械提示本场总轮数 + 已用轮数, 不引导搜或不搜
+        ss = self._search_state(symbol)
+        if ss["active"]:
+            used = int(state.get('search_rounds_used', 0) or 0)
+            mx = ss["max_rounds"]
+            if used >= mx:
+                incremental_msg += (
+                    f"\n\n【外部搜索】本场共 {mx} 轮，已用满 {used} 轮，<search_request> 留空即可。"
+                )
+            else:
+                incremental_msg += (
+                    f"\n\n【外部搜索】本场共 {mx} 轮，已用 {used} 轮。"
+                    f"本轮如有想查证的内容在 <search_request> 写明，无则留空。"
+                )
+
         messages.append({"role": "user", "content": incremental_msg})
         resp = self.call_llm(messages, role=agent)
         messages.append({"role": "assistant", "content": resp})
@@ -237,6 +296,76 @@ class ParliamentNodes:
     def fulcrum_debate_node(self, state: DebateState) -> Dict[str, Any]:
         """Fulcrum现在是普通辩论者，不再裁决、不再写batch"""
         return self._run_debate_round("fulcrum", state)
+
+    # =========================================================================
+    # 2.5 Evidence Search — 证据官(Scout)节点 (fulcrum_debate → evidence_search → moderation)
+    #
+    #   仅当: 搜索总开关 enabled 且 预算未耗尽 且 三方有人提了请求。
+    #   否则 pass-through(返回 {} 不改状态)。
+    #   流程: 收集本轮三方 search_request → evidence_officer.investigate(一次 grounding)
+    #         → 累积进 state.evidence(现喂下一轮) → best-effort 存 PG evidence 表 → 预算 +1。
+    #   证据 in-memory 现生成现喂; PG 只管存档/复现。失败绝不搞挂辩论。
+    # =========================================================================
+
+    def evidence_search_node(self, state: DebateState) -> Dict[str, Any]:
+        symbol = str(state.get('symbol', '') or '').upper()
+        turn   = state.get('turn_count', 1)
+        ss     = self._search_state(symbol)
+
+        # 收集本轮三方 search_request (从各自 latest 输出解析)
+        z = (self._parse_debate_output(state.get('zealot_latest', ''),  "zealot").get('search_request') or '').strip()
+        r = (self._parse_debate_output(state.get('reaper_latest', ''),  "reaper").get('search_request') or '').strip()
+        f = (self._parse_debate_output(state.get('fulcrum_latest', ''), "fulcrum").get('search_request') or '').strip()
+        requests = {"zealot": z, "reaper": r, "fulcrum": f}
+
+        # 门禁: 搜索总开关未启用 → pass-through
+        if not ss["active"]:
+            return {}
+        used = int(state.get('search_rounds_used', 0) or 0)
+        # 预算耗尽 → pass-through (debate 节点已会提示收敛)
+        if used >= ss["max_rounds"]:
+            logger.info(f"--- [Scout] 预算已用完 ({used}/{ss['max_rounds']}), 跳过 ---")
+            return {"search_requests": requests}
+        # 三方都没提 → 跳过(不计预算)
+        if not any(requests.values()):
+            logger.info(f"--- [Scout] 第{turn}轮三方无 search_request, 跳过 ---")
+            return {"search_requests": requests}
+
+        logger.info(f"--- [Scout] 第{turn}轮触发搜索 ({used + 1}/{ss['max_rounds']}) ---")
+        try:
+            # 搜源按 provider 选套: linkup(默认, deepseek+Linkup) | gemini(老 grounding, 封存)
+            if ss.get("provider", "linkup") == "linkup":
+                from workflows.evidence_officer_linkup import investigate
+            else:
+                from workflows.evidence_officer import investigate
+            context = f"标的：{symbol}；第{turn}轮辩论"
+            items = investigate(requests, context=context, model=ss["model"])
+        except Exception as e:
+            logger.warning(f"[Scout] investigate 异常, 本轮无证据: {type(e).__name__}: {e}")
+            items = []
+
+        if not items:
+            # 搜了但没出证据(全空/失败) → 不计预算(给后续轮机会), 仅记请求
+            logger.info("--- [Scout] 本轮未产出证据 ---")
+            return {"search_requests": requests}
+
+        generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        new_evidence = list(state.get('evidence', []) or []) + items
+
+        # best-effort 存档 PG evidence 表(失败不影响辩论)
+        try:
+            from datalayer.pg.evidence_pg_store import save_evidence
+            save_evidence(symbol, items, generated_at)
+        except Exception as e:
+            logger.warning(f"[Scout] PG 存档异常(忽略): {e}")
+
+        logger.info(f"--- [Scout] 第{turn}轮产出 {len(items)} 条证据, 累计 {len(new_evidence)} ---")
+        return {
+            "search_requests":       requests,
+            "evidence":              new_evidence,
+            "search_rounds_used":    used + 1,
+            "evidence_generated_at": generated_at,
+        }
 
     # =========================================================================
     # 3. Chronicler Moderation — 秩序维护 + 记忆管理
@@ -461,6 +590,24 @@ class ParliamentNodes:
     # 4. Chronicler Finalize — 写最终报告
     # =========================================================================
 
+    def _data_time_anchor(self, state: DebateState) -> str:
+        """把数据时点(market_data_timestamp_utc)转成给 LLM 的"现在时间"锚。
+        史官不接触 raw_data, 没有它就只能瞎猜年份(曾把 next_review 写成 2025)。
+        取不到时间戳 → 返回空串(不注入, 不报错)。"""
+        ts = state.get('data_timestamp_for_report')
+        if not ts:
+            return ""
+        try:
+            human = datetime.strptime(ts, "%Y%m%dT%H%M%SZ").strftime("%Y-%m-%d %H:%M UTC")
+        except Exception:
+            human = str(ts)
+        return (
+            f"## 当前时点（数据快照）\n"
+            f"本场分析的分时/量化数据截至 **{human}**——这就是\"现在\"。\n"
+            f"next_review 里所有日期(recommend_after / date_reached 等)都以此为基准推算, "
+            f"**年份务必写对, 不要照抄输出样例里的年份**。\n\n"
+        )
+
     def chronicler_finalize_node(self, state: DebateState) -> Dict[str, Any]:
         """V11: 史官只负责 finalize, 不参与每轮 moderation, 所以这里 fresh 构建对话.
         喂他: chronicler_soul (系统) + 完整 raw_xml 辩论历史 (用户) + finalize 任务.
@@ -475,8 +622,12 @@ class ParliamentNodes:
         history     = state.get('debate_history', []) or state.get('polished_debate_history', [])
         history_str = self._fmt_debate_batch(history) if history else "（无辩论记录）"
 
+        # 史官不喂 raw_data, 单独把"数据时点"作为"现在时间"锚注入, 防止 next_review 年份/日期写乱
+        time_anchor = self._data_time_anchor(state)
+
         finalize_msg = (
             f"## 最终报告阶段 | 标的：{symbol}\n\n"
+            f"{time_anchor}"
             f"以下是 Z/R/F 三方完整辩论历史 (Init + 各回合)。\n"
             f"基于这些发言, 综合三方论证质量, 撰写最终裁决报告。\n\n"
             f"## 完整辩论记录\n{history_str}\n\n"
@@ -571,6 +722,12 @@ class ParliamentNodes:
 
         final_json['signatures'] = self._get_model_signatures()
 
+        # 证据官产出: 记时间戳(复现锚, 复现拿它查 /api/evidence) + 内嵌证据(前端直接展示, 无需再查 PG)
+        evidence_items = state.get('evidence', []) or []
+        final_json['evidence_generated_at'] = state.get('evidence_generated_at')
+        final_json['evidence'] = evidence_items
+        final_json['search_rounds_used'] = int(state.get('search_rounds_used', 0) or 0)
+
         final_json['debate_history'] = [
             {k: v for k, v in entry.items() if k != 'raw_xml'}
             for entry in state.get('debate_history', [])
@@ -587,33 +744,18 @@ class ParliamentNodes:
         else:
             final_json['parent_analysis_file'] = None
 
+        # 报告元字段 (无条件设, PG debates 的 as_of 主键/复现锚就靠 market_data_timestamp_utc)
+        final_json['market_data_timestamp_utc'] = state.get('data_timestamp_for_report')
+        final_json['report_generated_at'] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # 报告写入 PG equipoise.debates (jsonb + 决策列); 不再落 JSON 文件 (已全量迁 PG)。
         try:
-            symbol = state.get('symbol', 'GENERAL').upper()
-            data_ts_iso = state.get('data_timestamp_for_report')
-
-            if data_ts_iso:
-                file_ts_str = data_ts_iso.replace("-", "").replace(":", "")
+            from datalayer.pg.debate_pg_store import save_debate
+            if save_debate(str(state.get('symbol', '')).upper(), final_json):
+                logger.info(f"✅ Final report → PG debates ({state.get('symbol')})")
             else:
-                now_utc = datetime.now(timezone.utc)
-                file_ts_str = now_utc.strftime("%Y%m%dT%H%M%SZ")
-
-            filename = f"{symbol}_Analysis_{file_ts_str}.json"
-
-            if self.output_dir:
-                symbol_dir = self.output_dir / symbol
-                symbol_dir.mkdir(parents=True, exist_ok=True)
-                save_path = symbol_dir / filename
-
-                final_json['market_data_timestamp_utc'] = data_ts_iso
-                final_json['report_generated_at'] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-                with open(save_path, "w", encoding="utf-8") as f:
-                    json.dump(final_json, f, indent=2, ensure_ascii=False)
-                logger.info(f"✅ Final report saved to: {save_path}")
-            else:
-                logger.warning("⚠️ Output directory not resolved, report NOT saved.")
-
+                logger.warning("⚠️ PG debates 写入返回 False (报告未入库)")
         except Exception as e:
-            logger.error(f"❌ Save failed: {e}")
+            logger.warning(f"[data_saver] PG 写入异常: {e}")
 
         return {"final_report": final_json}

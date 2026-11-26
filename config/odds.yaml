@@ -1,0 +1,69 @@
+# v3.4 (released 2026-10-31) odds model parameters — the one ruler shared by composite score and size.
+# Single neutral reference q_ref = 0.5, five symmetric strategies, normalised net path payoffs, observable cost
+# (docs/design/reorg/proposal-v35-20261030.md §3, contracts docs/design/reorg/v35-contracts.md C4 / C7). These values are
+# copied into each session's `_session.json.odds` snapshot at open; stages never re-read this file after open.
+# Background: docs/design/reorg/v34-odds-model-2026-10-29.md (S_ref and the exponential utility; its first deployment on 2026-10-29 was incomplete and withdrawn).
+# Every number here is a declared preference or convention, not a fitted constant.
+
+schema: "3.4"
+
+# Valuation horizon for the ruler (trading days after the opening, on the symbol's exchange calendar).
+# It is the mid-term slice the score and size are measured on; short_term_path.horizon_days stays the AI's own.
+T_days: 15
+T_days_overrides: {}          # e.g. {GENERAL: 20} — by symbol; empty = none
+
+# Exponential-utility risk aversion on normalised payoffs W* = (sigma_ref / s_s)·(d·r_path − n_tx·|d|·c).
+# anchor: 15-day μ 2%, σ 8%, no fees → the full unit; γ = 0.02 / (0.5·0.0064)
+gamma: 6.25
+sigma_ref: 0.08               # reference 15-day scale; s_s = ATR%14/100 · sqrt(T_days) of the symbol
+gamma_sensitivity: [5, 20]    # also computed and stored in scenario.derived for calibration; never used to pick tiers
+
+# Share of a strategy's mean payoff taken as information when sizing (v3.7.1, 2026-11-11): each strategy's mean is
+# multiplied by this, its dispersion kept. PROVISIONAL declared value, to be replaced by the measured slope of realised on
+# forecast returns once the v3.4+ reports mature (docs/design/drill/ACCURACY-BASELINE-2026-11-10.md §13: at 1.0 half the
+# reports sized at the cap on trees whose own 15-day Sharpe has a median of 0.08). 1.0 = no shrinkage.
+mean_shrink: 0.33
+
+# Where a close stop exits.
+#   next_price    = the open / gap_open written on the very next day (its gap included); otherwise the first later-day
+#                   event, else the leaf's P_T, never better than the triggering close (a proxy, recorded as stop_fill);
+#                   a stop triggered by the valuation-day close is not an exit (valued at P_T, one fill)
+#   trigger_price = the next written open on any later day, else the triggering close (sessions opened before 2026-11;
+#                   their snapshots lack this key and keep it)
+stop_fill_without_open: next_price
+
+# Probability bookkeeping
+p_tolerance: 0.01             # cumulative rounding error allowed before normalization; larger = invalid scenario (FATAL)
+z_flag: 3.0                   # |z| above this on a node is flagged (warn): needs a transmission path, both sides alike
+
+# Strategy comparison
+tie_threshold: 0.0005         # |CE_max - CE| at or below this = tie (absolute, return units)
+# Ties are sign-aware: among same-sign strategies inside the threshold, smallest |exposure change|, then the level nearest
+# P0; neutral wins only if the best action's CE <= 0.
+
+size_display_bounds: [37.5, 75]   # I < 37.5 light, < 75 standard, else heavy — display prototypes, not calibrated thresholds
+size_enum: {light: PILOT_SIZE, standard: STANDARD_SIZE, heavy: AGGRESSIVE_SIZE}   # storage names kept for PG / frontend
+
+# Baseline distribution for forecast scoring (CRPS skill): symmetric three-point around P0, sigma = ATR%14 * sqrt(T_days)
+baseline:
+  nodes_sigma: [-1.0, 0.0, 1.0]
+  probs: [0.25, 0.5, 0.25]
+  zero_scale: skip            # ATR missing or 0 -> no skill score for that report, reason recorded
+
+# Interval coverage for the postcheck ruler (nominal; discrete distributions may cover more)
+coverage_nominal: 0.80
+
+# Cost c (one way, bps) from observable measures, computed at open into the snapshot.
+# PROVISIONAL: base_bps, adr_surcharge_bps, k, fx_to_usd and volume_lot below are first guesses, not calibrated on fills;
+# recalibrate on the owner's IBKR fills (calibration path: Corwin-Schultz high-low spread, proposal §3.7) before treating
+# the cost as measured. A change here reaches only sessions opened after it (the snapshot freezes it at open).
+#   cost_bps = base_bps[venue] + (adr_surcharge_bps if ADR) + k · ATR%14 / sqrt(ADV_usd in millions)
+#   ADV = 20-day median close×(volume × volume_lot[venue]) × fx_to_usd; venue = trading venue (symbols.yaml region).
+#   Missing ATR or ADV → base + 5. volume_lot: IBKR daily bars report US stock volume in lots of 100 shares.
+# Assumes the reference order size (proposal §3.7); the rebalance layer judges execution at the reader's actual size.
+cost:
+  base_bps: {US: 2, EU: 4, JP: 4, KR: 5}
+  adr_surcharge_bps: 3
+  k: 10
+  fx_to_usd: {USD: 1.0, EUR: 1.08, GBP: 1.27, JPY: 0.0066, KRW: 0.00072}
+  volume_lot: {US: 100, EU: 1, JP: 1, KR: 1}

@@ -59,7 +59,7 @@ def path_belongs_to_manual_symbol(file_path: Path, manual_set: set) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Apex Quant 缓存清理工具 (V4 兼容版)",
+        description="Equipoise 缓存清理工具 (V4 兼容版)",
         formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument(
@@ -76,7 +76,7 @@ def main():
     parser.add_argument(
         "--include-manual",
         action="store_true",
-        help="同时清理 manual_only 标的 (RHM/7974/7011 等 runnable=false 的) 的缓存。\n"
+        help="同时清理 manual_only 标的 (RHM/NTDOY/MHVYF 等 runnable=false 的) 的缓存。\n"
              "(默认: 跳过, 保护 Claude Code 手动分析的数据不被清掉)"
     )
     args = parser.parse_args()

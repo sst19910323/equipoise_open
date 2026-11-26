@@ -1,0 +1,195 @@
+{
+  "shared": "Cutoff is 2026-11-18 14:29:59 UTC. D1 is the November 18 US regular session. P0 is the November 17 regular close. The frozen archive reports NVDA fiscal Q3 after the November 17 close: the results headline was published at 21:38 UTC and first seen in the NVDA feed at 23:00:30 UTC. Revenue was reported at $115.8B versus the archived $108.85B revenue consensus (about 6.4% higher), with a $130B forward revenue forecast. The 21:41 UTC coverage describes the forward forecast as above expectations without giving a comparable consensus figure. A 21:53 UTC headline reports an initial rise after the release and supplies no price path. November 18 is the first US regular session after the release. The observed bars end before the report. The shared evidence return gives no financed, firm, deferrable, or license-dependent breakdown of the guide and no dated changes to component deliveries. Reported earnings, the forward surprise, and the immediate response are distinct observations about one disclosure. Its implications for several issuers share the same source. The archive schedules the Anthropic listing for Thursday November 19 (D2), a financing-sentiment test with different links to each issuer. SMH and QQQ closed at $460.10 and $656.95, down 5.60% and 3.30% from November 9 and down 0.39% and 0.73% on November 17. On November 17 both recovered from their lows and still closed below their opens. This is evidence of a partial intraday retracement, with no inference about volume, positioning, or persistence. Paths are conditional USD closing estimates with subjective marginal probabilities, not a joint model. The six completed close-to-close returns and seven intraday ranges size the estimates; recent price levels are reference points and carry no independent directional claim. Side paths use roughly one to two recent daily standard deviations by D3, with longer distances contingent on transmission and persistence. The short window includes unusually large moves, so no square-root extrapolation or distribution fit is assumed. The middle path allows partial repricing or continued consolidation and hold remains available. Shared archive references are N-dfeef71e5f56b921, N-0f4ff70563975d1a, N-5efbc208d7106a87, N-9f018444c81f1d59, and N-8cb6b8b2235b7aed. Round 3 uses the same frozen evidence. The clearest live disagreement is MU: the D15 probability-weighted estimates are $722.34 here and $708.70 for Reaper, around a $712.42 P0. The difference is which memory segment is likely to drive the first material earnings revision and when. Forward component allocations and cash conversion remain unknown. Prospective tests below describe what evidence would change the branches if observed.",
+  "members": {
+    "MU": {
+      "thesis": "P0 $712.42, 6.48% daily return standard deviation, 6.41% median high-low range relative to open. Nvidia demand can translate to accelerator memory orders, and the archive reports tight Micron AI memory supply and Oxide shipping qualified Micron products. Oxide verifies deployment, with no volume disclosed. The upside assumes Nvidia demand reaches Micron allocations and HBM/DRAM mix offsets softer NAND. At $780 by D5 the recovery would approach the November 13 close of $778.31.",
+      "counterevidence": "The same HBM report flags a buyer cultivating a rival. GF Securities expects NAND weakness and a DRAM antitrust case is proceeding. The rebound from $666.88 to $712.42 on Nov 17 trimmed the loss to 0.92%, but the close remained below the open and prior close, consistent with volatile two-way trading. Weight on the middle path reflects the missing segment-level pass-through.",
+      "falsifier": "Contemporaneous buyer or Micron disclosures showing reduced Micron HBM allocations, or NAND ASP deterioration large enough to offset HBM gross profit growth, would remove the upside lean.",
+      "refs": [
+        "N-076d5c14614917ba",
+        "N-91e05b3e4c2b5a74",
+        "N-7fc9f5ee598eb426",
+        "N-5a9afe47b74b20ea",
+        "N-dfeef71e5f56b921"
+      ],
+      "paths": [
+        {
+          "label": "HBM mix leads",
+          "p": 0.28,
+          "d3": 756,
+          "d5": 780,
+          "d15": 813
+        },
+        {
+          "label": "Memory segments diverge",
+          "p": 0.46,
+          "d3": 715,
+          "d5": 720,
+          "d15": 725
+        },
+        {
+          "label": "Supply and buyer risks dominate",
+          "p": 0.26,
+          "d3": 667,
+          "d5": 647,
+          "d15": 620
+        }
+      ],
+      "opponent_response": "Reaper expects a NAND estimate cut could arrive before an HBM offset is verified. That is the strongest live challenge. The archived NAND call looks into 2027, so the timing argument needs evidence of earlier realized pricing pressure or an actual forecast revision. Shipping Oxide products show an issuer-specific deployment, with no disclosed scale or evidence that the design is a large HBM allocation. TSM record sales are more direct evidence of realized foundry demand, while MU requires a product mix and customer allocation bridge. NVDA reported revenue and guidance are direct at the accelerator vendor and cannot resolve that bridge. A dated revision to Micron gross profit split between NAND pricing and HBM volume and margin, corroborated by contract prices or customer allocations, would distinguish the tails. An early NAND cut with HBM assumptions steady favors Reaper; a funded HBM commitment sufficient to offset NAND pressure favors my upside. A rebound above $778 would carry more weight alongside either type of fundamental update.",
+      "revision": "Keep all R2 prices and probabilities. Hold remains appropriate around P0 with a small positive modeled mean. The evidence cannot settle the order or size of the segment revisions."
+    },
+    "NVDA": {
+      "thesis": "P0 $155.46, daily return standard deviation 3.09%, median intraday range 5.06%. The after-close beat provides direct evidence of revenue execution in the first report after Huang exited. A sustained repricing requires the forecast to reflect collectible end demand and continued execution under interim leadership. $170 by D5 would recover to around the November 13 intraday high. The D3 upside spans about two recent daily standard deviations, given the direct event.",
+      "counterevidence": "Shares closed down 12.99% from November 9 before the release. Customer financing and receivables give a plausible reason for an earnings beat to produce a limited rerating. Leadership and potential license restrictions can still affect orders. The $150.33 November 17 low is a downside reference observable before the report.",
+      "falsifier": "An as-of earnings reconciliation showing that incremental sales are mainly supported by vendor financing and cash collection materially lags sales would strip most of the beat-driven uplift.",
+      "refs": [
+        "N-dfeef71e5f56b921",
+        "N-0f4ff70563975d1a",
+        "N-71d1bc0f8d68f016",
+        "N-ac0e5d6becd31f22",
+        "N-6800aa989efb78be",
+        "N-d3015e8d4d1801b3",
+        "N-5efbc208d7106a87",
+        "N-9f018444c81f1d59"
+      ],
+      "paths": [
+        {
+          "label": "Demand and cash execution confirmed",
+          "p": 0.35,
+          "d3": 165,
+          "d5": 170,
+          "d15": 179
+        },
+        {
+          "label": "Beat absorbed with financing discount",
+          "p": 0.41,
+          "d3": 160,
+          "d5": 159,
+          "d15": 160
+        },
+        {
+          "label": "Cash and leadership discount widens",
+          "p": 0.24,
+          "d3": 145,
+          "d5": 141,
+          "d15": 134
+        }
+      ],
+      "opponent_response": "Reaper?s R2 response attributes 40% to my durable execution path, which was my R1 weight. R2 reduced it to 35%. We agree that the after-hours headline supports partial early repricing, and that funding quality matters more for the longer path. Reaper models a rarer but larger D15 upside and a deeper downside. My higher upside frequency and tighter tails reflect the observed operating beat with no measured deterioration or new funded-order bridge. This is the only member with a direct earnings surprise from the release. A credible reconciliation of incremental orders and cash collection would separate sustained execution from a partial rebound.",
+      "revision": "Keep all R2 paths. The pricing difference reflects judgment about execution frequency and tail sizes rather than additional evidence."
+    },
+    "AMD": {
+      "thesis": "P0 $503.41, daily return standard deviation 6.28%, median intraday range 7.75%. Strong accelerator spending can open a second-source opportunity if buyers qualify and fund separate AMD deployments. Archived commentary identifies a plausible competitive opening after Nvidia leadership disruption, with no confirmed AMD volume attached. Hold while the distinction is unresolved. $539 by D3 is near the November 13 close of $534.06, and $580 by D15 is near the November 12 close of $585.30. Server CPUs are a separate potential offset, conditional on AMD collecting incremental content.",
+      "counterevidence": "Nvidia beating expectations also supports incumbent execution. If buyers direct incremental budgets to Nvidia, AMD may receive only sentiment spillover. Licensing exposure and an archived valuation critique increase the cost of a missed conversion. On Nov 17 AMD regained much of its drop from $480.50 and closed at $503.41, below both its open and prior close.",
+      "falsifier": "Buyer deployment schedules that allocate incremental accelerator volumes to incumbent systems while AMD designs remain pilots would remove the share-gain premise.",
+      "refs": [
+        "N-2d03bbd029901236",
+        "N-35bcc8d747727787",
+        "N-dfeef71e5f56b921",
+        "N-d3015e8d4d1801b3",
+        "N-d5bf43c6ec8b563d",
+        "N-fcdf1576e3a4fce9",
+        "N-b28d0f1812161fdb"
+      ],
+      "paths": [
+        {
+          "label": "Second-source orders convert",
+          "p": 0.26,
+          "d3": 539,
+          "d5": 558,
+          "d15": 580
+        },
+        {
+          "label": "Sentiment spillover without order proof",
+          "p": 0.47,
+          "d3": 506,
+          "d5": 510,
+          "d15": 512
+        },
+        {
+          "label": "Incumbent captures spending",
+          "p": 0.27,
+          "d3": 475,
+          "d5": 455,
+          "d15": 428
+        }
+      ],
+      "opponent_response": "Reaper carries more weight on the combined licensing and share-capture downside. The rules apply to some customers and jurisdictions, and the archive cannot attach affected order dollars or delivery slots to AMD. The upside likewise requires its own volume evidence. AVGO has a distinct custom procurement route and TSM can serve multiple designers, while AMD must separately win an accelerator or server CPU socket. A dated customer deployment schedule with licensed AMD accelerator shipments or firm server CPU volumes would distinguish those issuer-specific outcomes.",
+      "revision": "Keep all R2 paths and retain hold. A revived industry budget and missing AMD orders can coexist; neither potential route establishes a forecast change."
+    },
+    "AVGO": {
+      "thesis": "P0 $341.60, daily return standard deviation 4.41%, median intraday range 4.24%. The archive identifies TPU-linked custom accelerator economics and AI networking as separate channels. Broadcom can benefit from hyperscalers scaling their own silicon and, where it wins content, from the network needed for larger clusters. $357 by D3 moves toward the November 12 close of $364.36. The relative price behavior tests the idea that all five companies trade as interchangeable exposures: AVGO gained 6.92% from November 9 and 2.46% on November 17 while SMH declined on both windows.",
+      "counterevidence": "The November 17 close near the $344 high is compatible with rotation already underway. The archive does not quantify new commitments, and NVIDIA GPU revenue has limited direct read-through to TPU quantities. TPU programs depend on concentrated hyperscaler budgets that can also cut networking orders.",
+      "falsifier": "An as-of hyperscaler deployment change that delays TPU volumes and lowers orders for switching equipment would reverse the proposed breadth of demand.",
+      "refs": [
+        "N-1bf2cac7891503b6",
+        "N-f2018d0026baad37",
+        "N-35bcc8d747727787",
+        "N-dfeef71e5f56b921"
+      ],
+      "paths": [
+        {
+          "label": "Custom silicon and networking both scale",
+          "p": 0.3,
+          "d3": 357,
+          "d5": 367,
+          "d15": 381
+        },
+        {
+          "label": "Rotation cools; orders remain steady",
+          "p": 0.47,
+          "d3": 342,
+          "d5": 343,
+          "d15": 347
+        },
+        {
+          "label": "Hyperscaler program delayed",
+          "p": 0.23,
+          "d3": 325,
+          "d5": 315,
+          "d15": 301
+        }
+      ],
+      "opponent_response": "We agree the pre-report divergence cannot quantify expectations. Reaper?s R2 discussion addresses my opening 35% dual-expansion weight, which I cut to 30% in R2. Unlike AMD, Broadcom can also benefit when Nvidia wins accelerators if those clusters use its networking. Unlike TSM, Broadcom?s custom accelerator opportunity depends on named programs rather than participation across several designers? foundry orders. A customer-backed TPU schedule alongside separate switching orders would support the dual-expansion branch. One channel alone can fit the middle branch.",
+      "revision": "Keep all R2 paths. The custom program and networking branches retain their existing weights because the evidence identifies the channels and leaves incremental bookings unmeasured."
+    },
+    "TSM": {
+      "thesis": "P0 $359.69, daily return standard deviation 3.83%, median intraday range 3.68%. Reported October sales rose 59.7% year over year to a record. Taiwan Semiconductor can benefit across GPU and some rival designs where their leading-edge wafer or advanced packaging orders use its capacity. NVDA results strengthen the near-term utilization premise conditional on continued schedules. A D3 move to $375 retests the November 16 close at $373.45.",
+      "counterevidence": "October sales look backward and aggregate different customers and products. The ADR closed down 3.68% on November 17 after a lower open, and was down 7.44% from November 9 versus SMH down 5.60%. The rebound from $353.50 to $359.69 left the close in the lower third of its range. Funding and customer concentration plausibly compress the ADR multiple even with healthy reported sales.",
+      "falsifier": "Frozen leading-edge wafer or advanced packaging schedules showing material Nvidia deferrals with weak replacement bookings from competing chip designers would invalidate the utilization premise.",
+      "refs": [
+        "N-bf12552ff52c73e9",
+        "N-41b9600225ca1633",
+        "N-c1657ffed6835517",
+        "N-31fc4b27175968ae",
+        "N-dfeef71e5f56b921"
+      ],
+      "paths": [
+        {
+          "label": "Foundry and packaging orders persist",
+          "p": 0.3,
+          "d3": 375,
+          "d5": 386,
+          "d15": 404
+        },
+        {
+          "label": "Healthy utilization with ADR discount",
+          "p": 0.43,
+          "d3": 360,
+          "d5": 363,
+          "d15": 368
+        },
+        {
+          "label": "Order deferrals or deeper multiple discount",
+          "p": 0.27,
+          "d3": 344,
+          "d5": 333,
+          "d15": 319
+        }
+      ],
+      "opponent_response": "Reaper?s slot-transferability objection specifies the limit of the cross-designer argument. Both paths can feature strong prior monthly sales while differing on future scheduled capacity. AMD share gains are neither necessary nor sufficient for TSM volume growth; qualification, process and timing determine whether a displaced order can be replaced. A dated schedule for advanced-node starts and qualified packaging bookings would distinguish broad utilization from an idle-slot downside. The November 17 recovery occurred before Nvidia reported.",
+      "revision": "Keep all R2 paths. Near-term customer and packaging allocation remains unresolved, and the modeled price stays near P0 across the weighted horizons."
+    }
+  },
+  "request": "None. The MU deadlock remains on the timing and gross-profit size of a NAND estimate reset versus a funded HBM allocation gain. The frozen evidence contains no segment-level bridge."
+}

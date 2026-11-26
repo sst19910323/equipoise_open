@@ -24,3 +24,24 @@ results/
 # Local source images and AI consultation records
 /.local/
 /council/
+
+# Local deployment and credentials (publish example configurations only)
+config/models.yaml
+config/data_sources.yaml
+config/rebalance_profile.yaml
+.claude/settings*.json
+.codex/auth.json
+.codex/config.toml
+*.pem
+*.key
+
+# Runtime, private research and local environments
+/output/
+/logs/
+/pids/
+/reports/
+/drill_sealed/
+/.pytest_cache/
+/.venv/
+/venv/
+/DEPLOY_COMMIT

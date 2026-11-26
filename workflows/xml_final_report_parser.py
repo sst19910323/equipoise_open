@@ -25,6 +25,16 @@ DEFAULT_SHORT_TERM = {
 
 VALID_DIRECTIONS = {"上行", "震荡", "下行"}
 
+# ── next_review (下一波触发) ──
+DEFAULT_NEXT_REVIEW = {
+    "recommend_after": "",          # 下一次复盘的 UTC 时间点 YYYY-MM-DDTHH:MM:SSZ
+    "reason": "",                   # 一句简单原因 (给 Hermes / 人看)
+    "structured_triggers": [],      # 条件层 (大盘到X价位) — 以后再启用, 现在 AI 不输出
+}
+VALID_TRIGGER_TYPES = {
+    "price_below", "price_above", "sector_drop", "sector_rise", "date_reached"
+}
+
 DEFAULT_FINAL_REPORT = {
     "final_report": {
         "debate_summary": "[解析失败]",
@@ -46,6 +56,7 @@ DEFAULT_FINAL_REPORT = {
             "reaper_final_action": 50, "reaper_reservation": "N/A",
             "fulcrum_final_action": 50, "fulcrum_reservation": "N/A"
         },
+        "next_review": dict(DEFAULT_NEXT_REVIEW),
         "statement": "[解析失败]"
     }
 }
@@ -97,6 +108,58 @@ def _regex_cdata_or_plain(text: str, tag: str) -> str:
     m = re.search(rf'<{tag}>\s*(.*?)\s*</{tag}>', text, re.DOTALL)
     if m: return m.group(1).strip()
     return ""
+
+
+def _to_float_or_none(val) -> Optional[float]:
+    try:
+        return float(str(val).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_trigger(attrib: Dict) -> Optional[Dict]:
+    """把一个 structured_trigger 的属性 dict 规范化。非法 → None (丢弃)。
+    支持来源: XML 属性 dict 或旧 JSON 的 trigger dict (键名一致)。
+    """
+    ttype = str(attrib.get("type", "")).strip()
+    if ttype not in VALID_TRIGGER_TYPES:
+        return None
+    if ttype in ("price_below", "price_above"):
+        sym = str(attrib.get("symbol", "")).strip().upper()
+        val = _to_float_or_none(attrib.get("value"))
+        if not sym or val is None:
+            return None
+        return {"type": ttype, "symbol": sym, "value": val}
+    if ttype in ("sector_drop", "sector_rise"):
+        sec = str(attrib.get("sector", "")).strip().upper()
+        pct = _to_float_or_none(attrib.get("pct"))
+        if not sec or pct is None:
+            return None
+        return {"type": ttype, "sector": sec, "pct": pct}
+    if ttype == "date_reached":
+        d = str(attrib.get("date", "")).strip()
+        if not d:
+            return None
+        return {"type": ttype, "date": d}
+    return None
+
+
+def _parse_next_review(elem) -> Optional[Dict]:
+    """解析 <next_review> 元素 → dict。elem 为 None → None (上层用默认值兜底)。"""
+    if elem is None:
+        return None
+    nr = {
+        "recommend_after": _get_text(elem, "recommend_after", ""),
+        "reason": _get_text(elem, "reason", "") or _get_text(elem, "notes", ""),  # notes 仅向后兼容
+        "structured_triggers": [],
+    }
+    st_elem = elem.find("structured_triggers")
+    if st_elem is not None:
+        for trg in st_elem.findall("trigger"):
+            t = _normalize_trigger(dict(trg.attrib))
+            if t:
+                nr["structured_triggers"].append(t)
+    return nr
 
 
 # ══════════════════════════════════════════════════════════════
@@ -221,7 +284,12 @@ def _parse_final_strict(xml_str: str) -> Optional[Dict]:
         dissent["fulcrum_final_action"] = _get_text(dis_elem, "fulcrum_final_action", "50")
         dissent["fulcrum_reservation"] = _get_text(dis_elem, "fulcrum_reservation", "N/A")
     r["dissent"] = dissent if dissent else DEFAULT_FINAL_REPORT["final_report"]["dissent"]
-    
+
+    # next_review (下一波触发)
+    parsed_nr = _parse_next_review(root.find("next_review"))
+    if parsed_nr is not None:
+        r["next_review"] = parsed_nr
+
     if not r.get("debate_summary") and not r.get("action"):
         return None
     
@@ -302,6 +370,24 @@ def _parse_final_regex(text: str) -> Optional[Dict]:
         r["short_term"] = st
         count += 1
 
+    # next_review 块捕获 (best-effort)
+    nr_match = re.search(r'<next_review>(.*?)</next_review>', text, re.DOTALL)
+    if nr_match:
+        nb = nr_match.group(1)
+        nr = {
+            "recommend_after": "",
+            "reason": _regex_cdata_or_plain(nb, "reason") or _regex_cdata_or_plain(nb, "notes"),
+            "structured_triggers": [],
+        }
+        m = re.search(r'<recommend_after>\s*(.*?)\s*</recommend_after>', nb, re.DOTALL)
+        if m: nr["recommend_after"] = m.group(1).strip()
+        for raw_attrs in re.findall(r'<trigger\b([^>]*?)/?>', nb):
+            attrib = dict(re.findall(r'(\w+)\s*=\s*["\']([^"\']*)["\']', raw_attrs))
+            t = _normalize_trigger(attrib)
+            if t: nr["structured_triggers"].append(t)
+        r["next_review"] = nr
+        count += 1
+
     if count >= 2:
         logger.info(f"[FinalReportParser] Regex fallback extracted {count} fields.")
         return {"final_report": r}
@@ -369,6 +455,27 @@ def _validate_final_report(data: Dict):
         st["target"] = "N/A" if val is None or str(val).strip() == "" else str(val).strip()
         st["rationale"] = str(st.get("rationale", "") or "").strip()
     fr["short_term"] = st
+
+    # next_review 校验归一
+    nr = fr.get("next_review")
+    if not isinstance(nr, dict):
+        nr = copy.deepcopy(DEFAULT_NEXT_REVIEW)
+    else:
+        nr.setdefault("recommend_after", "")
+        nr.setdefault("reason", "")
+        nr["recommend_after"] = str(nr.get("recommend_after", "") or "").strip()
+        # reason 向后兼容: 旧报告可能只有 notes
+        nr["reason"] = str(nr.get("reason", "") or nr.get("notes", "") or "").strip()
+        trgs = nr.get("structured_triggers") or []
+        norm: List[Dict] = []
+        if isinstance(trgs, list):
+            for t in trgs:
+                if isinstance(t, dict):
+                    nt = _normalize_trigger(t)
+                    if nt:
+                        norm.append(nt)
+        nr["structured_triggers"] = norm
+    fr["next_review"] = nr
 
     data["final_report"] = fr
 

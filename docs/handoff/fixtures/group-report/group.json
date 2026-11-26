@@ -1,0 +1,12 @@
+{
+  "report_kind": "sector_group",
+  "symbol": "GROUP_US_CHIPS",
+  "market_data_timestamp_utc": "20261118T142959Z",
+  "debate_history": [{"round": "R1", "role": "zealot", "content": {"summary_statement": "Synthetic shared debate for UI testing.", "analysis_text": "The two member decisions use the same hearing."}}],
+  "signatures": {"zealot": "fixture", "reaper": "fixture"},
+  "reference_prices": [{"symbol": "MU", "price": 100, "currency": "USD", "as_of": "20261118T142900Z"}],
+  "members": [
+    {"symbol": "MU", "composite_score": 42, "execution_card": {"now": "hold", "notices": [{"severity": "warning", "message": "Synthetic MU notice."}]}},
+    {"symbol": "AMD", "composite_score": 61, "execution_card": {"now": "buy_now", "notices": []}}
+  ]
+}

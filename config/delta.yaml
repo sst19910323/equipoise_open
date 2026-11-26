@@ -1,0 +1,9 @@
+# 增量场(follow-up / delta session, 2026-11-06; scripts/delta_session.py)的机器参数。
+# 增量场 = 新场(新 as_of、新参考价、新 odds、完整终裁链、同样的 closure check 与硬上限), 只有两点不同:
+#   1. 导入上一场仍有效的 Scout 证据当"standing evidence"(事实, 不是结论; 适用性由辩手重判);
+#   2. 轮数参考更短(round_ref)。上一场的裁决 / 评分 / 操作 / 价位 / 情景树 / 双方 final 一概不传。
+max_chain: 3              # delta 的 delta 最多到第几层(试运行保险, 待校准): 第 4 次强制全场
+max_base_age_days: 7      # 基底场多旧就不能当基底(自然日)
+round_ref: 3              # 增量场的参考轮数(全场 5); 显式 --round-ref 优先
+import_kinds: [search]    # 只导入 Scout 搜证(meta.kind); 备餐机器数与模型调用(P07/P06/P01)永远重做
+import_status: [verified] # 只导入核实过的

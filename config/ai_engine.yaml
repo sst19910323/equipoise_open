@@ -1,0 +1,24 @@
+# 低频任务(经济 / 基本面 / 新闻 / 恐慌指数)用哪个 AI 引擎 —— scripts/hermes_task.py 读, Hermes 不再自己拼命令。
+# 2026-11-03 起: 按 order 依次试, 谁成了算谁; codex 身份先看额度线(config/duty.yaml 的 usage_stop_used_pct), 超线跳过。
+# 两个引擎跑同一套业务规范(.claude/commands/*.md 是唯一权威), codex 走薄壳 .codex/<task>.md。
+#
+# 模型一律便宜的(库主 11-03: 默认甚至土模型就行): claude=haiku, codex=gpt-6-luna(执行者模型, Scout/Runner 同款)。
+
+order: [claude, codex1, codex3, codex2, codex4]       # 取值 claude | codex1 | codex2 | codex3 | codex4
+models: {claude: haiku, codex1: gpt-6-luna, codex2: gpt-6-luna, codex3: gpt-6-luna, codex4: gpt-6-luna}
+timeout_seconds: 1200
+
+# claude -p 的工具白名单(默认); 任务可覆盖
+allowed_tools: "WebSearch,WebFetch,Read,Write,Edit,Bash(./venv/bin/python datalayer/pg/db.py *),Bash(date *)"
+
+# 按任务覆盖(省略 = 用上面的默认)。任务名 = slash command 名(去斜杠)。
+tasks:
+  # Capacity comes from weekly_units_at_85 in duty.yaml.
+  refresh-fundamentals:
+    selection: weighted_remaining
+    order: [codex1, codex2, codex3, codex4]
+  refresh-sentiment:
+    allowed_tools: "WebSearch,WebFetch,Read,Write,Edit,Bash(./venv/bin/python datalayer/pg/*.py *),Bash(date *)"
+
+# 旧字段(2026-11-03 前 Hermes 直接读): 保留只为兼容, 新脚本以 order 为准
+default: claude

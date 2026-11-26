@@ -1,0 +1,157 @@
+# 低频数据更新时间表 —— apex_codex 维护, hermes 只读, 由 hermes 触发。
+#
+# ── 给 hermes(触发方)的契约 ───────────────────────────────────────────────
+# 每个 indicator 一个 `next` 块, 里面【最多两个触发槽, 每种至多一个】:
+#
+#   time:      { at: <UTC 时刻>, reason: <一句话> }
+#       → 到 at 这个【UTC】时刻就喊 codex 刷新该 indicator。目前【唯一在用】。
+#
+#   condition: { watch: <名>, op: ">"|"<", value: <数>, reason: <一句话> }
+#       → 某个值越过阈值才喊。【以后才加, 现在没有, hermes 暂不用管】。
+#
+# 任一槽条件先满足 → 喊 codex。两个槽最多各一个, 不是列表。
+# codex 每次只写【下一次】的 next(下下次等下次刷新时才写)。所有时间一律 UTC。
+#
+# 喊法(按所在段选命令):
+#   economic.<REGION>.<indicator>  → claude -p "/refresh-lowfreq <REGION> <indicator>" ...
+#   fundamentals.<SYMBOL>          → claude -p "/refresh-fundamentals <SYMBOL>" ...
+# codex 刷完回写 last(本次发布日)+ next。`last` 是 codex 记账, hermes 忽略。
+# fundamentals = 公司财报(季度驱动); codex 刷新时顺手 upsert company 身份行。
+# ──────────────────────────────────────────────────────────────────────────
+
+economic:
+  US:
+    fed_funds_rate:          { last: 2026-10-28, next: { time: { at: 2026-12-09T19:00:00Z, reason: "FOMC 利率决议 (12/8-9 会议, 12/9 14:00 ET 公布; FOMC 日历确认)" } } }
+    cpi_yoy:                 { last: 2026-10-14, next: { time: { at: 2026-12-10T13:30:00Z, reason: "美国 11月 CPI 发布 (BLS 日历 12/10 08:30 ET); 10月 CPI 已于 11-10 发布但 BLS 不发布 10月 12 个月同比 (2025 年 10 月停摆未采集), 本轮跳过, last 未动" } } }
+    core_cpi_yoy:            { last: 2026-10-14, next: { time: { at: 2026-12-10T13:30:00Z, reason: "美国 11月 核心CPI 发布 (随 CPI 同批, BLS 日历 12/10 08:30 ET); 10月 核心同比同样 BLS 不发布, 本轮跳过, last 未动" } } }
+    core_pce_yoy:            { last: 2026-06-25, next: { time: { at: 2026-11-25T13:30:00Z, reason: "美国 10月 PCE 发布 (BEA 下次发布 11/25 08:30 ET); 9月核心PCE 本轮未能官方核实, 未写入" } } }
+    ppi_yoy:                 { last: 2026-11-13, next: { time: { at: 2026-12-15T13:30:00Z, reason: "美国 11月 PPI 发布 (BLS 日历确认 12/15 08:30 ET)" } } }
+    unemployment_rate:       { last: 2026-11-06, next: { time: { at: 2026-12-01T13:30:00Z, reason: "early wake-up: confirm the release date first; 美国 11月 非农就业报告 (估 12/4 周五 08:30 ET, 第三方日历列 12/4, BLS 未核实); 10月 已于 11-06 入库 (UR 4.1%)" } } }
+    nonfarm_payrolls:        { last: 2026-11-06, next: { time: { at: 2026-12-01T13:30:00Z, reason: "early wake-up: confirm the release date first; 美国 11月 非农就业报告 (估 12/4 周五 08:30 ET, 第三方日历列 12/4, BLS 未核实); 10月 已于 11-06 入库 (NFP +165K)" } } }
+    real_gdp_growth_qoq_ann: { last: 2026-10-29, next: { time: { at: 2026-11-25T13:30:00Z, reason: "美国 Q3 GDP 第二估 (BEA 列 11/25 08:30 ET)" } } }
+    ism_mfg:                 { last: 2026-11-02, next: { time: { at: 2026-11-27T12:00:00Z, reason: "提前唤醒: 先确认发布日 (估 12/1 周二 10:00 ET, 首个工作日 ISM 制造业 PMI)" } } }
+    ism_svc:                 { last: 2026-11-04, next: { time: { at: 2026-12-03T15:00:00Z, reason: "美国 11月 ISM 服务业 PMI (12/3 10:00 ET, ISM 10月报告公布的下一发布日)" } } }
+    retail_sales_mom:        { last: 2026-11-17, next: { time: { at: 2026-12-16T13:30:00Z, reason: "美国 11月零售销售发布 (Census 日历确认 12/16 08:30 ET)" } } }
+    consumer_sentiment:      { last: 2026-11-06, next: { time: { at: 2026-11-20T15:00:00Z, reason: "美国 11月 密歇根消费者信心终值 (11/20 10:00 ET); 11/6 初值 51.0 vs 48.0 预期已入库, 官方页未直接核对, 多家媒体一致" } } }
+    initial_jobless_claims:  { last: 2026-11-12, next: { time: { at: 2026-11-25T13:30:00Z, reason: "US 初请失业金下一期; DOL 官方日历确认感恩节周提前至 11/25 08:30 EST; 本轮 11/19 发布值未能从 DOL 最新公告核实, 跳过且 last 未动" } } }
+    treasury_10y:            { last: 2026-11-17, next: { time: { at: 2026-11-24T21:00:00Z, reason: "10Y 美债收益率周度刷新; Treasury 最新公布 11/17 为 5.10%" } } }
+    treasury_2y:             { last: 2026-11-17, next: { time: { at: 2026-11-24T21:00:00Z, reason: "2Y 美债收益率周度刷新; Treasury 最新公布 11/17 为 4.80%" } } }
+
+  EZ:
+    ecb_deposit_rate:        { last: 2026-10-29, next: { time: { at: 2026-12-17T13:15:00Z, reason: "ECB 12月利率决议 (14:15 CET)" } } }
+    hicp_yoy:                { last: 2026-11-04, next: { time: { at: 2026-11-28T10:00:00Z, reason: "提前唤醒: 先确认发布日(估 12/1 11:00 CET 欧元区 11月 HICP flash, 财经日历源列 12/1, Eurostat 未核实)" } } }
+    core_hicp_yoy:           { last: 2026-11-04, next: { time: { at: 2026-11-28T10:00:00Z, reason: "提前唤醒: 先确认发布日(随 HICP flash 同批, 估 12/1 11:00 CET, Eurostat 未核实)" } } }
+    unemployment_rate:       { last: 2026-10-30, next: { time: { at: 2026-11-27T10:00:00Z, reason: "提前唤醒: 先确认发布日(估 12/2 欧元区 10月 失业率, Eurostat 未核实)" } } }
+    gdp_growth_qoq:          { last: 2026-11-13, next: { time: { at: 2026-12-07T10:00:00Z, reason: "Eurostat 欧元区 Q3 GDP regular estimate 更新 (官方日历确认 12/7)" } } }
+    bund_10y:                { last: 2026-11-19, next: { time: { at: 2026-11-26T12:00:00Z, reason: "德 10Y Bund 收益率周度刷新; Bundesbank 11/19 最新日度值 3.36%" } } }
+    hcob_mfg:                { last: 2026-10-23, next: { time: { at: 2026-11-20T08:00:00Z, reason: "early wake-up: confirm release date first; S&P Global PMI calendar lists Flash Eurozone PMI for Nov 23 09:00 CET (08:00 UTC), dates provisional; Nov 17 check only, not released" } } }
+    hcob_svc:                { last: 2026-10-23, next: { time: { at: 2026-11-20T08:00:00Z, reason: "early wake-up: confirm release date first; S&P Global PMI calendar lists Flash Eurozone PMI for Nov 23 09:00 CET (08:00 UTC), dates provisional; Nov 17 check only, not released" } } }
+    eurusd:                  { last: 2026-11-18, next: { time: { at: 2026-11-26T12:00:00Z, reason: "EURUSD 周度刷新; ECB 最新参考汇率为 11/18 的 1.0968" } } }
+
+  UK:
+    boe_bank_rate:           { last: 2026-11-05, next: { time: { at: 2026-12-14T12:00:00Z, reason: "early wake-up: confirm the release date first; BoE 12月 MPC 决议 (est. Thu 2026-12-17 12:00 UK, 未经官方日历核实); 11/5 加息 25bp 至 4.00%, 8-1 投票(Mann 主张加 50bp)" } } }
+    cpi_yoy:                 { last: 2026-10-21, next: { time: { at: 2026-12-16T07:00:00Z, reason: "英国 11月 CPI 发布 (ONS 官方日历确认 12/16 07:00 GMT); 10月本期实际值尚无法从正式来源核实, 本轮跳过, last 未动" } } }
+    core_cpi_yoy:            { last: 2026-06-17, next: { time: { at: 2026-12-16T07:00:00Z, reason: "英国 11月 CPI/核心CPI 同批发布 (ONS 官方日历确认 12/16 07:00 GMT); 10月本期核心实际值尚无法从正式来源核实, 本轮跳过, last 未动" } } }
+    unemployment_rate:       { last: 2026-10-20, next: { time: { at: 2026-12-15T07:00:00Z, reason: "ONS 官方日历确认 UK Labour Market: December 2026 于 12/15 07:00 GMT 发布; 11/17 发布页在 07:11 UTC 仍标记未发布, 本轮跳过, last 未动" } } }
+    gilt_10y:                { last: 2026-11-16, next: { time: { at: 2026-11-26T12:00:00Z, reason: "英国央行 10年期名义平价国债收益率最新值为 11/16 的 5.3151%; 下次按周度约一周后刷新" } } }
+    spgi_svc:                { last: 2026-11-04, next: { time: { at: 2026-11-23T09:30:00Z, reason: "S&P Global 官方发布日历确认英国 11月 Flash PMI 于 11/23 09:30 UTC 发布; date-confirm 本轮未发布, 到时刷新服务业 PMI" } } }
+    spgi_mfg:                { last: 2026-11-02, next: { time: { at: 2026-11-27T09:30:00Z, reason: "提前唤醒:先确认发布日(估 12/1 周二首个工作日 09:30 UK, 英国 11月 制造业 PMI 终值; 未官方确认)" } } }
+    gdp_growth_mom:          { last: 2026-11-12, next: { time: { at: 2026-12-11T07:00:00Z, reason: "英国 10月 月度 GDP (ONS 12/11 07:00 GMT, ONS 已列明下一发布日); 本轮刷入 9月值 0.2% m/m" } } }
+    gbpusd:                  { last: 2026-11-13, next: { time: { at: 2026-11-20T12:00:00Z, reason: "GBPUSD 周度刷新 (11/13 value 1.3245; next weekly refresh ~7 days later)" } } }
+
+  JP:
+    boj_policy_rate:         { last: 2026-10-30, next: { time: { at: 2026-12-15T00:00:00Z, reason: "提前唤醒: 先确认发布日(估 12/18 BoJ 12 月会议决议, 日历站列 12/17-18, 未官方核实; 10/30 维持 1.25%, 8-1 投票)" } } }
+    cpi_total_yoy:           { last: 2026-10-22, next: { time: { at: 2026-12-17T23:30:00Z, reason: "日本 11月全国 CPI 发布 (统计局/e-Stat 日历确认 12/18 08:30 JST); 10月结果页尚未更新且本次无法核实实际值, 跳过, last 未动" } } }
+    cpi_core_yoy:            { last: 2026-10-22, next: { time: { at: 2026-12-17T23:30:00Z, reason: "日本 11月全国核心 CPI 随 CPI 同批发布 (统计局/e-Stat 日历确认 12/18 08:30 JST); 10月结果页尚未更新且本次无法核实实际值, 跳过, last 未动" } } }
+    gdp_growth_qoq_ann:      { last: 2026-11-16, next: { time: { at: 2026-12-07T23:50:00Z, reason: "Japan Q3 2026 second preliminary GDP estimate (Cabinet Office calendar confirms Dec 8 08:50 JST)" } } }
+    unemployment_rate:       { last: 2026-10-29, next: { time: { at: 2026-11-27T00:00:00Z, reason: "提前唤醒: 先确认发布日(估 11/30 日本 10月 失业率, economy.com 列 11/30, 未官方确认)" } } }
+    tankan_large_mfg_di:     { last: 2026-10-01, next: { time: { at: 2026-12-12T00:00:00Z, reason: "提前唤醒: 先确认发布日(估 12 月中, 2025 年 12 月为 12/15; BoJ 日历未官方确认; 唤醒后先确认日期)" } } }
+    trade_balance:           { last: 2026-06-18, next: { time: { at: 2026-12-15T23:50:00Z, reason: "Japan November 2026 monthly trade statistics release (MOF calendar confirms Dec 16 08:50 JST); October 2026 figures were due Nov 18 but actual value could not be verified this run, so skipped" } } }
+    exports_yoy:             { last: 2026-10-21, next: { time: { at: 2026-12-15T23:50:00Z, reason: "Japan November 2026 monthly exports release (MOF calendar confirms Dec 16 08:50 JST); October 2026 figure was due Nov 18 but actual value could not be verified this run, so skipped" } } }
+    imports_yoy:             { last: 2026-10-21, next: { time: { at: 2026-12-15T23:50:00Z, reason: "Japan November 2026 monthly imports release (MOF calendar confirms Dec 16 08:50 JST); October 2026 figure was due Nov 18 but actual value could not be verified this run, so skipped" } } }
+    jgb_10y:                 { last: 2026-11-16, next: { time: { at: 2026-11-24T12:00:00Z, reason: "10Y JGB 收益率周度刷新; MoF 常期限收益率表最新值为 11/16 的 2.885%" } } }
+    usdjpy:                  { last: 2026-11-17, next: { time: { at: 2026-11-24T12:00:00Z, reason: "USDJPY 周度刷新; BoJ 11/17 外汇市况公布东京 17:00 spot 159.33–35, central rate 159.10" } } }
+
+  KR:
+    bok_base_rate:           { last: 2026-08-27, next: { time: { at: 2026-11-23T00:00:00Z, reason: "提前唤醒: 先确认发布日(估 11/26 BoK 11月 议息, 按常规周期估算未官方核实; 10/22 议息结果未能核实, 已写入 7/16 加息 2.75 与 8/27 加息 3.00, 10/22 未写入)" } } }
+    cpi_yoy:                 { last: 2026-11-03, next: { time: { at: 2026-11-29T00:00:00Z, reason: "early wake-up: confirm the release date first; 韩国 11月 CPI 估 12/2 KST 08:00 (按常规周期估算, 未官方核实); 10月 2.8% 已于 11-03 入库" } } }
+    core_cpi_yoy:            { last: 2026-11-03, next: { time: { at: 2026-11-29T00:00:00Z, reason: "early wake-up: confirm the release date first; 韩国 11月 核心CPI 随 CPI 同批(估 12/2 KST, 未官方核实); 10月核心 2.8% 已于 11-03 入库" } } }
+    gdp_growth_qoq:          { last: 2026-10-27, next: { time: { at: 2027-01-19T00:00:00Z, reason: "提前唤醒: 先确认发布日(估 2027-01 下旬 BoK Q4-2026 实际GDP 速报, 日历未官方核实)" } } }
+    unemployment_rate:       { last: 2026-11-11, next: { time: { at: 2026-12-15T23:00:00Z, reason: "韩国 11月就业动向 (Ministry of Data and Statistics 官方月度日历确认 12/16 08:00 KST)" } } }
+    exports_yoy:             { last: 2026-11-01, next: { time: { at: 2026-12-01T00:00:00Z, reason: "MOTIE 产业通商资源部 11月 出口速报(每月 1 日 KST 09:00)" } } }
+    imports_yoy:             { last: 2026-11-01, next: { time: { at: 2026-12-01T00:00:00Z, reason: "MOTIE 11月 进口速报(每月 1 日)" } } }
+    trade_balance:           { last: 2026-11-01, next: { time: { at: 2026-12-01T00:00:00Z, reason: "MOTIE 11月 贸易差额(每月 1 日; 单位 USD 100M)" } } }
+    semi_exports_yoy:        { last: 2026-11-01, next: { time: { at: 2026-12-01T00:00:00Z, reason: "MOTIE 11月 半导体出口(随出口速报每月 1 日)" } } }
+    bok_mfg_bsi:             { last: 2026-10-28, next: { time: { at: 2026-11-23T00:00:00Z, reason: "提前唤醒: 先确认发布日(估 11/26 BoK 11月 企业景气调查 制造业BSI, 未官方核实; 10 月值 78)" } } }
+    ktb_10y:                 { last: 2026-11-16, next: { time: { at: 2026-11-23T12:00:00Z, reason: "韩国 10Y KTB 周度刷新 (11/16 收盘 3.981%, Yonhap Infomax; 下次约一周后)" } } }
+    usdkrw:                  { last: 2026-07-10, next: { time: { at: 2026-11-24T00:00:00Z, reason: "USDKRW 周度刷新 (11/16 不同来源收盘冲突, 本轮未写入; 原触发已过期, 下次约一周后)" } } }
+
+# 公司基本面(季度驱动)。喊: claude -p "/refresh-fundamentals <SYMBOL>"。codex 顺手刷 company 身份行。
+fundamentals:
+  ADSK: { last: 2026-08-27, next: { time: { at: 2026-11-24T22:00:00Z, reason: "Autodesk Q3 FY2027 earnings release and conference call (IR confirmed)." } } }
+  CVX: { last: 2026-10-30, next: { time: { at: 2027-01-20T08:00:00Z, reason: "Early wake-up: confirm the estimated January 22, 2027 Q4 2026 earnings date with IR first." } } }
+  PEP: { last: 2026-10-08, next: { time: { at: 2027-02-08T12:00:00Z, reason: "Early wake-up: confirm the estimated February 11, 2027 Q4 2026 earnings date with IR first." } } }
+  ELV: { last: 2026-10-21, next: { time: { at: 2027-01-25T12:00:00Z, reason: "Early wake-up: confirm the estimated January 27, 2027 Q4 2026 earnings date with IR first; not officially confirmed." } } }
+  COST: { last: 2026-09-24, next: { time: { at: 2026-12-10T21:15:00Z, reason: "Costco Q1 FY2027 earnings results; IR calendar confirms December 10, 2026." } } }
+  TGT: { last: 2026-11-18, next: { time: { at: 2027-02-27T12:00:00Z, reason: "Early wake-up: confirm the estimated March 2, 2027 Q4 2026 earnings date with IR first." } } }
+  ULTA: { last: 2026-08-27, next: { time: { at: 2026-12-03T21:05:00Z, reason: "Ulta Beauty Q3 FY2026 earnings release; IR confirmed December 3 after market close." } } }
+  MA: { last: 2026-10-29, next: { time: { at: 2027-01-25T12:00:00Z, reason: "Early wake-up: confirm the estimated January 28, 2027 Q4 2026 earnings date with IR first; not officially confirmed." } } }
+  LDO: { last: 2026-11-05, next: { time: { at: 2027-03-03T06:00:00Z, reason: "Leonardo 2026 annual results: 2027 financial calendar sets Board approval for March 3; wake at 07:00 CET to check the release." } } }
+  SU: { last: 2026-10-16, next: { time: { at: 2027-02-18T05:30:00Z, reason: "Schneider Electric FY2026 annual results; IR confirms February 18, 2027 (wake at 06:30 CET)." } } }
+  ABBN: { last: 2026-10-20, next: { time: { at: 2027-01-28T06:00:00Z, reason: "ABB Q4 and FY 2026 results; IR confirms January 28, 2027 (07:00 CET)." } } }
+  RMS: { last: 2026-10-22, next: { time: { at: 2027-02-12T07:00:00Z, reason: "Hermès 2026 full-year results; IR confirms February 12, 2027 at 08:00 CET." } } }
+  IBIDEN: { last: 2026-10-29, next: { time: { at: 2027-02-01T06:00:00Z, reason: "early wake-up: confirm the earnings date first; IBIDEN FY2026 Q3 is estimated for February 4, 2027 (aggregator estimate; IR has not confirmed)." } } }
+  SMFG: { last: 2026-11-13, next: { time: { at: 2027-01-26T08:00:00Z, reason: "Early wake-up: confirm the estimated late-January 2027 nine-month results date with IR first; IR currently says late January." } } }
+  MFG: { last: 2026-11-13, next: { time: { at: 2027-02-01T06:00:00Z, reason: "early wake-up: confirm the earnings date first; Mizuho FY2026 Q3 estimated for February 4, 2027 (TipRanks estimate; IR lists February 2027 but has not confirmed the exact date)." } } }
+  MSBHF: { last: 2026-11-04, next: { time: { at: 2027-02-01T06:00:00Z, reason: "early wake-up: confirm the estimated February 4, 2027 nine-month results date with IR first; not officially confirmed." } } }
+  MITSY: { last: 2026-11-04, next: { time: { at: 2027-02-01T06:00:00Z, reason: "Early wake-up: confirm the estimated February 3, 2027 nine-month FY2027 results date with IR first; aggregator estimate, not officially confirmed." } } }
+  SHG: { last: 2026-10-27, next: { time: { at: 2027-02-08T06:00:00Z, reason: "Early wake-up: confirm the estimated February 11, 2027 FY2026 results date with IR first; not officially confirmed." } } }
+  HANA: { last: 2026-10-23, next: { time: { at: 2027-01-26T06:00:00Z, reason: "Early wake-up: confirm the estimated January 29, 2027 FY2026 earnings date with IR first; not officially confirmed." } } }
+  KIA: { last: 2026-10-30, next: { time: { at: 2027-01-25T06:00:00Z, reason: "Early wake-up: confirm the estimated January 27, 2027 Q4 2026 earnings date with IR first; aggregator estimate, not officially confirmed." } } }
+  JPM:  { last: 2026-10-13, next: { time: { at: 2027-01-14T11:00:00Z, reason: "JPMorgan Q4-2026 财报(IR 2027 财年电话会排期列 2027-01-14 盘前 ~7am ET; Q3-2026 已于 2026-10-13 灌入 PG)" } } }
+  GOOGL: { last: 2026-10-28, next: { time: { at: 2027-01-31T21:00:00Z, reason: "Alphabet Q4-2026 earnings (est. ~Feb 3 2027 from history, not IR-confirmed; early wake-up: confirm the earnings date first; Q3-2026 loaded to PG 2026-10-28)" } } }
+  MSFT: { last: 2026-10-28, next: { time: { at: 2027-01-25T14:00:00Z, reason: "Microsoft Q2-FY2027 财报(截至 12/31; 未经 IR 确认, 按历史口径估算 2027-01-27 盘后; early wake-up: confirm the earnings date first; Q1-FY2027 已于 2026-10-28 灌入 PG)" } } }
+  AAPL: { last: 2026-11-02, next: { time: { at: 2027-01-25T21:00:00Z, reason: "early wake-up: Apple Q1-FY2027 earnings (est. ~Jan 27-28 2027 after close per aggregators, not IR-confirmed; confirm the earnings date first; Q4-FY2026 loaded to PG 2026-11-03)" } } }
+  AMZN: { last: 2026-10-29, next: { time: { at: 2027-02-01T21:00:00Z, reason: "early wake-up: Amazon Q4-2026 earnings (est. Thu 2027-02-04 after close per aggregators, not IR-confirmed; confirm the earnings date first; Q3-2026 loaded to PG 2026-11-03)" } } }
+  META: { last: 2026-10-21, next: { time: { at: 2027-01-25T20:00:00Z, reason: "Meta Q4-2026 earnings (est. ~Jan 27 2027 after close from history, not IR-confirmed; early wake-up: confirm the earnings date first; Q3-2026 loaded to PG 2026-11-03)" } } }
+  RHM:  { last: 2026-11-05, next: { time: { at: 2027-03-08T08:00:00Z, reason: "early wake-up: confirm the earnings date first; Rheinmetall FY2026 annual results (est. ~Wed 2027-03-10 from prior-year pattern: FY2025 on 2026-03-11, FY2024 on 2025-03-12; not IR-confirmed; Capital Markets Day 25-27 Nov 2026 is not an earnings release); 9M-2026 loaded to PG 2026-11-05 (sales 8,376 EUR M, op result 1,339 EUR M)" } } }
+  BESI: { last: 2026-10-22, next: { time: { at: 2027-02-16T06:00:00Z, reason: "Besi Q4/FY2026 results (IR calendar lists Feb 2027 only; est. Thu 2027-02-18 from prior Feb pattern, not IR-confirmed; early wake-up: confirm the earnings date first)" } } }
+  HAG:  { last: 2026-11-05, next: { time: { at: 2027-02-23T06:00:00Z, reason: "early wake-up: confirm the earnings date first; Hensoldt FY2026 results est. ~Thu 2027-02-26 from prior pattern (FY2025 on 2026-02-26, FY2024 on 2025-02-27), not IR-confirmed; Capital Markets Day 10 Nov 2026 is not an earnings release; 9M-2026 loaded to PG 2026-11-05 from primary EQS release (sales 1,863 EUR M, adj. EBITDA 281 EUR M)" } } }
+  SHECY: { last: 2026-10-27, next: { time: { at: 2027-01-24T06:00:00Z, reason: "early wake-up: confirm the earnings date first; Shin-Etsu Q3-FY2027 (9M to Dec 2026) est. ~Wed 2027-01-27 from history (2026-01-27, 2025-01-29, 2024-01-26), not IR-confirmed" } } }
+  MHVYF: { last: 2026-11-06, next: { time: { at: 2027-01-31T06:00:00Z, reason: "early wake-up: confirm the earnings date first; MHI Q3-FY2026 (9M to Dec 2026) est. ~Feb 3-4 2027 from prior-year pattern (9M FY2025 released 2026-02-04), not IR-confirmed; 6M-FY2026 (Apr-Sep 2026, release 2026-11-06) loaded to PG 2026-11-08 (revenue 2,523.2, business profit 249.3, attributable NI 203.2 JPY B; FY guidance raised to revenue 6,000 / business profit 600 / NI 440 JPY B)" } } }
+  NTDOY: { last: 2026-11-05, next: { time: { at: 2027-02-01T06:00:00Z, reason: "early wake-up: confirm the earnings date first; Nintendo Q3-FY2027 (9M to Dec 2026) est. early Feb 2027 from quarterly cadence, not IR-confirmed (IR calendar lists nothing after Nov 2026 except the Mar 31 2027 dividend record date); H1-FY2027 (Apr-Sep 2026, release 2026-11-05) loaded to PG 2026-11-06" } } }
+  NVDA: { last: 2026-11-17, next: { time: { at: 2027-02-21T21:00:00Z, reason: "early wake-up: confirm the earnings date first; NVIDIA Q4-FY2027 earnings estimated around 2027-02-24 after close from prior-year cadence; not IR-confirmed" } } }
+  AMD:  { last: 2026-11-03, next: { time: { at: 2027-01-29T21:00:00Z, reason: "early wake-up: confirm the earnings date first; AMD Q4-FY2026 earnings (est. Tue 2027-02-02 after close from prior-year pattern (Feb 3 2026, Feb 4 2025), not IR-confirmed; Q3-FY2026 loaded to PG 2026-11-03)" } } }
+  AVGO: { last: 2026-09-02, next: { time: { at: 2026-12-07T12:00:00Z, reason: "early wake-up: confirm the earnings date first; Broadcom Q4-FY2026 (quarter ends 2026-11-01) est. Thu 2026-12-10 after close per aggregators, not IR-confirmed; Q3-FY2026 loaded to PG 2026-09-02" } } }
+  MU:   { last: 2026-09-30, next: { time: { at: 2026-12-14T21:00:00Z, reason: "early wake-up: confirm the earnings date first; Micron FQ1-FY2027 (quarter ends late Nov 2026) est. Wed 2026-12-16 2:30pm MT per countdown site, not IR-confirmed (last year's call was 2025-12-17, IR notice came 2025-11-19); FQ4-FY2026 (3M, release 2026-09-30) already in PG and checked against SEC 8-K" } } }
+  INTC: { last: 2026-10-29, next: { time: { at: 2027-01-18T21:00:00Z, reason: "early wake-up: confirm the earnings date first; Intel Q4-2026 results (WSH INFERRED est. Thu 2027-01-21 after close, not IR-confirmed; Q3-2026 released 2026-10-29)" } } }
+  TSM:  { last: 2026-10-15, next: { time: { at: 2027-01-11T06:00:00Z, reason: "TSMC Q4-2026 财报(季度截至 12/31; days.to 估 2027-01-14 盘前 ~1am EST, 未经 IR 确认; early wake-up: confirm the earnings date first)" } } }
+  ASML: { last: 2026-10-14, next: { time: { at: 2027-01-23T06:00:00Z, reason: "ASML Q4-2026 财报(季度截至 12/31; 未经 IR 确认, MarketScreener 估 2027-01-26 盘前 ~07:00 CET; early wake-up: confirm the earnings date first)" } } }
+  TSLA: { last: 2026-10-21, next: { time: { at: 2027-01-25T15:00:00Z, reason: "Tesla Q4-2026 财报(季度截至 12/31; 未经 IR 确认, Wall Street Horizon 推算 2027-01-27 周三盘后; early wake-up: confirm the earnings date first)" } } }
+  ADBE: { last: 2026-09-10, next: { time: { at: 2026-12-06T14:00:00Z, reason: "early wake-up: Adobe Q4-FY2026 earnings (est. Wed 2026-12-09 after close per countdown aggregator, not IR-confirmed; confirm the earnings date first; Q3-FY2026 (Sep 10) loaded to PG 2026-11-03)" } } }
+  XOM:  { last: 2026-10-30, next: { time: { at: 2027-01-26T12:00:00Z, reason: "early wake-up: ExxonMobil Q4-2026 earnings (est. Fri 2027-01-29 pre-market per AJ Bell calendar, not IR-confirmed; confirm the earnings date first; Q3-2026 loaded to PG 2026-11-03)" } } }
+  CEG:  { last: 2026-11-09, next: { time: { at: 2027-02-09T13:00:00Z, reason: "early wake-up: confirm the earnings date first; Constellation Q4/FY2026 earnings not yet published, est. ~late Feb 2027 from quarterly cadence (Q2 2026-08-06, Q3 2026-11-09), not IR-confirmed; Q3-2026 released 2026-11-09 and loaded to PG (rev 9,550, op income 2,492, net income 1,835 USD M, GAAP EPS 5.19, adj. op EPS 5.06; FY2026 adj. op EPS guidance narrowed to 12.50-12.80)" } } }
+  "BRK.B": { last: 2026-11-07, next: { time: { at: 2027-02-24T21:00:00Z, reason: "early wake-up: confirm the earnings date first; Berkshire Q4/FY2026 results + annual report est. Sat 2027-02-27 from prior Saturday pattern (Q4 released late Feb), not IR-confirmed; Q3-2026 released 2026-11-07 and loaded to PG (rev 105,647, net 22,112, op earnings 12,705 USD M, EPS 10.33 per B share)" } } }
+  SNPS: { last: 2026-08-26, next: { time: { at: 2026-12-07T20:00:00Z, reason: "early wake-up: confirm the earnings date first. Synopsys Q4-FY2026 (FY ends 10/31) estimated Wed 2026-12-09 after close from last year's Dec 10 pattern; MarketScreener projects 12-01; not yet IR-confirmed" } } }
+  VST:  { last: 2026-11-06, next: { time: { at: 2027-02-23T06:00:00Z, reason: "early wake-up: confirm the earnings date first; Vistra Q4/FY2026 results est. ~Thu 2027-02-25 from prior-year pattern (FY2025 on 2026-02-26, not IR-confirmed); Q3-2026 loaded to PG 2026-11-06 (revenue 6,347, net income 1,140, op income 1,706, ongoing adj. EBITDA 2,378 USD M)" } } }
+  PLTR: { last: 2026-11-02, next: { time: { at: 2027-01-30T21:00:00Z, reason: "early wake-up: confirm the earnings date first; Palantir Q4-2026 earnings (est. ~Mon 2027-02-02 after close from history: 2026-02-02, 2025-02-03; not IR-confirmed); Q3-2026 loaded to PG 2026-11-03 (verified vs SEC 8-K)" } } }
+  MP:   { last: 2026-11-05, next: { time: { at: 2027-02-22T15:00:00Z, reason: "early wake-up: confirm the earnings date first; MP Materials Q4-2026 earnings est. ~Thu 2027-02-25 after close from prior-year pattern (Q4-2025 reported 2026-02-26 after close per Benzinga), not IR-confirmed; Q3-2026 (3M) released 2026-11-05 loaded to PG (verified vs SEC 8-K Ex.99.1, 0001801368-26-000056; gross_profit not printed, not loaded)" } } }
+  WMT:  { last: 2026-11-19, next: { time: { at: 2027-02-18T13:00:00Z, reason: "Walmart FY2027 Q4 earnings release (IR confirmed; 7:00 a.m. US/Central)" } } }
+  UNH:  { last: 2026-10-13, next: { time: { at: 2027-01-25T14:00:00Z, reason: "early wake-up: confirm the earnings date first; UnitedHealth Q4-FY2026 earnings, aggregators (AJ Bell) list 2027-01-27 8am ET call (Days.to lists 2027-01-26), pending IR confirmation. Q3-2026 released 2026-10-13, PG verified vs SEC 8-K" } } }
+  LLY:  { last: 2026-10-29, next: { time: { at: 2027-02-01T12:00:00Z, reason: "early wake-up: confirm the earnings date first; Eli Lilly Q4-2026 earnings est. ~Thu 2027-02-04 pre-market from prior-year pattern (2026-02-04, 2025-02-06), not IR-confirmed; Q3-2026 (9M) released 2026-10-29, verified vs SEC 8-K" } } }
+  MCD:  { last: 2026-11-04, next: { time: { at: 2027-02-08T12:00:00Z, reason: "early wake-up: confirm the earnings date first; McDonald's Q4-2026 earnings est. ~Wed 2027-02-10 from history (Q4-2025 was Feb 11 2026), not IR-confirmed; Q3-2026 loaded to PG 2026-11-04 (SEC 8-K Ex.99.1, 0000063908-26-000080)" } } }
+  ELF:  { last: 2026-11-04, next: { time: { at: 2027-02-02T00:00:00Z, reason: "early wake-up: confirm the earnings date first; e.l.f. Q3-FY2027 earnings (est. ~Feb 4-5 2027 from Q1 Aug 5 / Q2 Nov 4 cadence; not IR-confirmed); 已灌 Q1-FY2027 (08-05) 与 Q2-FY2027 (11-04, rev 520.8 / adj EPS 1.21) 及 6M 累计; consensus 未取到" } } }
+  ABBV: { last: 2026-10-30, next: { time: { at: 2027-02-01T12:00:00Z, reason: "early wake-up: confirm the earnings date first; AbbVie Q4/FY2026 earnings (est. ~2027-02-04 from last year's Feb 4 2026 release, not IR-confirmed); loaded Q2-2026 (07-31: 3M + 6M) and Q3-2026 (10-30: 3M + 9M, gross margin 3M 75.4%)" } } }
+  V:    { last: 2026-10-27, next: { time: { at: 2027-01-25T14:00:00Z, reason: "early wake-up: Visa Q1-FY2027 earnings (est. late Jan 2027 from prior-year pattern, not IR-confirmed; confirm the earnings date first; Q4-FY2026 (+ FY2026 12M) loaded to PG 2026-11-12; Q3-FY2026 not loaded: primary release unreachable, aggregator figures unverified)" } } }
+
+  # ── KR 韩国(2026-07-13 首次初始化, K-IFRS/KRW B) ──
+  SSNLF: { last: 2026-10-29, next: { time: { at: 2027-01-04T00:00:00Z, reason: "Samsung Electronics Q4-2026 preliminary guidance (est. ~Jan 7 2027 KST from history, not IR-confirmed; early wake-up: confirm the earnings date first; Q3-2026 prelim 2026-10-08 + final 2026-10-29 loaded to PG; Q2-2026 final not loaded, see receipt)" } } }
+  HXSCL: { last: 2026-10-27, next: { time: { at: 2027-01-26T00:00:00Z, reason: "early wake-up: confirm the earnings date first; SK hynix Q4-2026 earnings (est. 2027-01-29 per calendar, pending IR 6-K confirmation; 已灌 Q2-2026 与 Q3-2026)" } } }
+  HANMISEMI: { last: 2026-10-30, next: { time: { at: 2027-02-01T00:00:00Z, reason: "early wake-up: confirm the earnings date first; Hanmi Semiconductor FY2026/Q4 results (est. early Feb 2027 from FY2025 pattern, ~Feb 6 2026 disclosure; not IR-confirmed); 已灌 Q2-2026 (07-14, rev 251.2 / OP 130.3 / NI 108.4) 与 Q3-2026 provisional (10-30, rev 181.0 / OP 90.8; NI not in provisional, not loaded)" } } }
+  HANWHAAERO: { last: 2026-10-29, next: { time: { at: 2027-02-06T00:00:00Z, reason: "early wake-up: confirm the earnings date first; 韩华航空航天 FY2026/Q4 财报(按 FY2025 于 2026-02-09 公告估, 待 IR 确认); 已灌 Q2-2026 (07-31 公告, 含韩华海洋并表) 与 Q3-2026 (10-29 公告, 收入/营业利润/净利润归母 -137.1B, 合并净亏 -36.7B 对照 SateEconomy)" } } }
+  DOOSANENER: { last: 2026-10-29, next: { time: { at: 2027-01-29T00:00:00Z, reason: "斗山Enerbility FY2026/Q4(估 1 月底-2 月初, 待 IR 确认; early wake-up: confirm the earnings date first; 已灌 Q2-2026 (07-27) + Q3-2026 preliminary (10-29, revenue/OP only, NI basis unclear))" } } }
+  # ── JP 日本新增(2026-07-13 首次初始化, 已灌 FY2026 全年/JPY B) ──
+  HOCPY: { last: 2026-10-30, next: { time: { at: 2027-01-29T06:00:00Z, reason: "early wake-up: confirm the earnings date first; HOYA Q3-FY2027 (Apr-Dec 2026) on 2027-02-01 per aggregators (Quartr / Simply Wall St), not yet confirmed on HOYA IR; 已灌 Q1-FY2027 (07-31, 3M) + H1-FY2027 (10-30, 6M) revenue/operating_profit/net_income" } } }
+  AJINY: { last: 2026-11-09, next: { time: { at: 2027-02-07T06:00:00Z, reason: "early wake-up: confirm the earnings date first; Ajinomoto Q3 FY2026 (Apr-Dec 2026, cumulative 9M) estimated 2027-02-10 per earnings-date aggregators, not IR-confirmed; H1 FY2026 (Apr-Sep 2026, 6M) loaded from official IR financial results released 2026-11-09" } } }
+  SFTBY: { last: 2026-11-10, next: { time: { at: 2027-02-09T06:00:00Z, reason: "early wake-up: confirm the earnings date first; SoftBank Group Q3 FY2026 (Oct-Dec 2026) listed only as 'Q3 Earnings Results in February' on IR calendar, no exact date; estimate ~2027-02-12, pending IR confirmation. Loaded H1 FY2026 (Apr-Sep 2026, 6M) net_sales/net_income on 2026-11-10 from the official financial report; operating income not loaded (no line item in the report's highlights)" } } }
+  ITOCY: { last: 2026-11-04, next: { time: { at: 2027-02-03T06:00:00Z, reason: "early wake-up: confirm the earnings date first; Itochu Q3 (Apr-Dec 2026) estimated ~2027-02-06 from last year's 2026-02-06 Q3 release, pending IR confirmation; loaded H1 FY2026 (Apr-Sep 2026, 6M) revenue/net_income/trading_income on 2026-11-04" } } }

@@ -3,6 +3,138 @@
 # (定义了 'horizon_sentinel.py' 和 'data_scheduler.py' 要处理的对象)
 # =============================================================================
 
+# Fixed actionable members for a shared sector hearing. References do not get cards.
+research_groups:
+  GROUP_US_CHIPS:
+    label: 半导体群组
+    label_en: Semiconductor group
+    region: US
+    members: [MU, NVDA, AMD, AVGO, TSM, SMH, ASML, INTC]
+    benchmark: SMH
+  GROUP_US_CLOUD:
+    label: 大型平台与算力开支
+    label_en: Large platforms and compute spending
+    region: US
+    members: [MSFT, GOOGL, META]
+    benchmark: QQQ
+  GROUP_US_POWER:
+    label: 独立发电
+    label_en: Power producers
+    region: US
+    members: [CEG, VST, XLU]
+    benchmark: XLU
+  GROUP_US_SOFTWARE:
+    label: 成熟应用软件
+    label_en: Application software
+    region: US
+    members: [ADBE, ADSK, IGV]
+    benchmark: IGV
+  GROUP_US_OIL:
+    label: 综合油气
+    label_en: Integrated oil and gas
+    region: US
+    members: [XOM, CVX, XLE]
+    benchmark: XLE
+  GROUP_US_HEALTHCARE:
+    label: 医保支付与制药
+    label_en: Managed care and pharmaceuticals
+    region: US
+    members: [UNH, ELV, XLV, LLY, ABBV]
+    benchmark: XLV
+  GROUP_US_RETAIL:
+    label: 大众消费与零售
+    label_en: Consumer demand and retail
+    region: US
+    members: [WMT, COST, TGT, XLP, KO, PEP, MCD]
+    benchmark: XLP
+  GROUP_US_BEAUTY:
+    label: 美妆品牌与渠道
+    label_en: Beauty brands and retail
+    region: US
+    members: [ELF, ULTA]
+    benchmark: XLP
+  GROUP_EU_DEFENSE:
+    label: 欧洲防务
+    label_en: European defense
+    region: EU
+    members: [RHM, HAG, LDO]
+    benchmark: EXSA
+  GROUP_EU_ELECTRIFICATION:
+    label: 工业电气与自动化
+    label_en: Electrification and automation
+    region: EU
+    members: [SIE, SU, ABBN]
+    benchmark: EXSA
+  GROUP_EU_LUXURY:
+    label: 奢侈品
+    label_en: Luxury goods
+    region: EU
+    members: [MC, RMS]
+    benchmark: EXSA
+  GROUP_JP_CHIP_MATERIALS:
+    label: 半导体材料与封装
+    label_en: Semiconductor materials and packaging
+    region: JP
+    members: [SHECY, HOCPY, AJINY, IBIDEN]
+    benchmark: N225
+  GROUP_JP_BANKS:
+    label: 大型银行
+    label_en: Major banks
+    region: JP
+    members: [MUFG, SMFG, MFG]
+    benchmark: N225
+  GROUP_JP_TRADING_HOUSES:
+    label: 综合商社
+    label_en: Trading houses
+    region: JP
+    members: [ITOCY, MSBHF, MITSY]
+    benchmark: N225
+  GROUP_KR_HBM:
+    label: 存储与设备
+    label_en: Memory and HBM equipment
+    region: KR
+    members: [SSNLF, HXSCL, HANMISEMI]
+    benchmark: KODEX200
+  GROUP_KR_BANKS:
+    label: 金融控股
+    label_en: Financial holding companies
+    region: KR
+    members: [KB, SHG, HANA]
+    benchmark: KODEX200
+  GROUP_KR_AUTOS:
+    label: 汽车制造
+    label_en: Automakers
+    region: KR
+    members: [HYMTF, KIA]
+    benchmark: KODEX200
+
+  GROUP_US_FINANCIALS:
+    label: 银行与支付
+    label_en: Banking and payments
+    region: US
+    members: [JPM, XLF, V, MA]
+    benchmark: XLF
+  GROUP_US_AEROSPACE:
+    label: 航天防务与政府合同
+    label_en: Aerospace, defense and government contracts
+    region: US
+    members: [SPCX, PLTR, ITA]
+    benchmark: ITA
+  GROUP_US_STRATEGIC_MATERIALS:
+    label: 稀土与战略矿产
+    label_en: Rare earths and strategic materials
+    region: US
+    members: [MP, REMX]
+    benchmark: REMX
+
+# Display categories only. These instruments retain independent hearings.
+standalone_sections:
+  US:
+    - {label: 平台与消费科技, label_en: Platforms and consumer technology, symbols: [AAPL, AMZN, TSLA]}
+    - {label: 芯片设计工具, label_en: Chip design tools, symbols: [SNPS]}
+    - {label: 综合控股, label_en: Diversified holdings, symbols: [BRK.B]}
+    - {label: 黄金, label_en: Gold, symbols: [GLD]}
+
 analysis_targets:
   # Stocks - require market data + news + fundamentals
   stocks:
@@ -22,6 +154,8 @@ analysis_targets:
     - ADBE     # Adobe Inc. (SaaS/AI App)
     - JPM      # JPMorgan Chase & Co. (Financials)
     - WMT      # Walmart Inc. (Consumer Staples)
+    - MCD      # McDonald's Corp (麦当劳, 快餐; 2026-09-24 上架, 板块按防御消费挂 XLP)
+    - KO       # The Coca-Cola Company (可口可乐, 饮料/必需消费; 2026-10-16 上架, 防御消费挂 XLP)
     - UNH      # UnitedHealth Group Inc. (Healthcare)
     - XOM      # Exxon Mobil Corporation (Energy)
     - BRK.B    # Berkshire Hathaway Inc. Class B
@@ -29,22 +163,63 @@ analysis_targets:
     - CEG      # Constellation Energy Corp (Utilities/Nuclear)
     - VST      # Vistra Corp (Utilities/Nuclear)
     - PLTR     # Palantir Technologies (AI/Defense/Government Software)
+    - SPCX     # SpaceX / Space Exploration Technologies (2026-06-12 上市, 卫星宽带+AI算力+航天发射)
     - MP       # MP Materials (美国稀土 pure-play / 战略矿产)
+    - LLY      # Eli Lilly and Company (礼来, GLP-1/医药; 与 AI 链低相关)
+    - ELF      # e.l.f. Beauty (平价彩妆 + Rhode; 中小盘消费成长, 高波动区间股; 2026-11-12 上架, 个人护理挂 XLP)
+    - ABBV     # AbbVie Inc. (艾伯维, 免疫/肿瘤制药; 2026-11-12 上架, 医药里 LLY 之外的第二只, 与 AI 链低相关)
+    - V        # Visa Inc. (支付网络; 2026-11-12 上架, 金融里非银行的一只)
+    - ADSK  # Autodesk
+    - CVX  # Chevron
+    - PEP  # PepsiCo
+    - ELV  # Elevance Health
+    - COST  # Costco Wholesale
+    - TGT  # Target Corporation
+    - ULTA  # Ulta Beauty
+    - MA  # Mastercard
     - RHM      # Rheinmetall AG (莱茵金属, 德国国防, runnable=false → Claude Code 手动)
     - BESI     # BE Semiconductor (荷兰半导体先进封装, runnable=false → Claude Code 手动)
     - HAG      # Hensoldt (德国国防电子, runnable=false → Claude Code 手动)
-    - "7974"   # Nintendo (任天堂, 东京 7974, runnable=false → Claude Code 手动)
-    - "7011"   # Mitsubishi Heavy Industries (三菱重工, 东京 7011, runnable=false → Claude Code 手动)
-    - "4063"   # 信越化学 (日本硅晶圆, runnable=false → Claude Code 手动)
-    - "7741"   # HOYA (日本 EUV 光罩基板, runnable=false → Claude Code 手动)
-    - "2802"   # 味之素 (日本 ABF 芯片基板, runnable=false → Claude Code 手动)
+    - SIE      # Siemens AG (德国工业自动化/电气化, runnable=false)
+    - DBK      # Deutsche Bank AG (欧元区银行, runnable=false)
+    - ADS      # adidas AG (德国消费品牌, runnable=false)
+    - MC       # LVMH (法国奢侈品, runnable=false)
+    - NOVO     # Novo Nordisk B (丹麦 GLP-1, runnable=false)
+    - LDO  # Leonardo
+    - SU  # Schneider Electric
+    - ABBN  # ABB Ltd
+    - RMS  # Hermès International
+    - NTDOY    # Nintendo (任天堂, 东证 7974, runnable=false → Claude Code 手动)
+    - MHVYF    # Mitsubishi Heavy Industries (三菱重工, 东证 7011, runnable=false → Claude Code 手动)
+    - SHECY    # 信越化学 Shin-Etsu (日本硅晶圆, 东证 4063, runnable=false → Claude Code 手动)
+    - HOCPY    # HOYA (日本 EUV 光罩基板, 东证 7741, runnable=false → Claude Code 手动)
+    - AJINY    # 味之素 Ajinomoto (日本 ABF 芯片基板, 东证 2802, runnable=false → Claude Code 手动)
+    - SFTBY    # SoftBank Group (软银, 东证 9984, 广基锚/持 Arm, runnable=false → Claude Code 手动)
+    - ITOCY    # Itochu (伊藤忠商事, 东证 8001, 综合商社, runnable=false → Claude Code 手动)
+    - TM       # Toyota Motor (丰田, 东证 7203, runnable=false)
+    - MUFG     # Mitsubishi UFJ (三菱UFJ, 东证 8306, runnable=false)
+    # ── 韩股 (region KR, canonical=英文/罗马音; KRX 数字降级为 ibkr_ticker) ──
+    - IBIDEN  # Ibiden
+    - SMFG  # Sumitomo Mitsui Financial Group
+    - MFG  # Mizuho Financial Group
+    - MSBHF  # Mitsubishi Corporation
+    - MITSY  # Mitsui & Co.
+    - SSNLF      # Samsung Electronics (三星电子, KRX 005930, 存储+代工, runnable=false)
+    - HXSCL      # SK Hynix (SK 海力士, KRX 000660, HBM 龙头/供 NVIDIA, runnable=false)
+    - HANMISEMI  # Hanmi Semiconductor (韩美半导体, KRX 042700, HBM 键合设备, runnable=false)
+    - HANWHAAERO # Hanwha Aerospace (韩华航空航天, KRX 012450, 国防出口, runnable=false)
+    - DOOSANENER # Doosan Enerbility (斗山能源, KRX 034020, 核电/SMR, runnable=false)
+    - HYMTF      # Hyundai Motor (现代汽车, KRX 005380, runnable=false)
+    - KB         # KB Financial Group (KRX 105560, runnable=false)
 
+    - SHG  # Shinhan Financial Group
+    - HANA  # Hana Financial Group
+    - KIA  # Kia Corporation
   # ETFs - require market data + news
-  # 宽基 + 板块 ETF 全部独立分析（板块 ETF 既是分析对象，也是个股的 sector 上下文）
+  # 板块 ETF 按研究归属组定价，GLD 独立研究。其他研究可以引用这些 ETF 作为背景。
+  # SPY / QQQ / DIA 都是可投资的现货 ETF；美国 GENERAL 的三个镜头分别负责其操作卡。
+  # 三者的取数入口在 benchmarks 和 symbol_contracts，派单单位为 GENERAL。
   etfs:
-    - SPY      # SPDR S&P 500 ETF Trust (宽基)
-    - QQQ      # Invesco QQQ Trust (Nasdaq-100, 宽基)
-    - GLD      # SPDR Gold Shares
     - SMH      # VanEck Semiconductor ETF (半导体)
     - XLF      # Financial Select Sector SPDR (金融)
     - XLV      # Health Care Select Sector SPDR (医疗)
@@ -54,13 +229,16 @@ analysis_targets:
     - IGV      # iShares Expanded Tech-Software ETF (软件)
     - ITA      # iShares U.S. Aerospace & Defense ETF (国防航天)
     - REMX     # VanEck Rare Earth/Strategic Metals ETF (稀土战略矿产)
+    - GLD      # SPDR Gold Shares (黄金; 2026-11-06 起进"商品"组, 排在板块组之后; 以后石油 / 白银等商品型 ETF 同组)
+    # (DAX 曾于 2026-09-29 入列借 ETF 框架, 但此列表兼作美股分组依据, DAX 被前端挂进美股宽基堆
+    #  → 2026-09-30 撤出; 框架归类改走 symbol_contracts.DAX.context_type: etf, 列表回归纯美股语义)
 
   # Benchmarks - 用于 GENERAL 宏观分析的三镜头基准
   # (盘前盘后有真实成交量，替代了原 SPX/NDX/INDU 指数)
   benchmarks:
-    - SPY      # S&P 500 代理 (与 etfs 复用，单独分析 + 基准双重身份)
-    - QQQ      # Nasdaq-100 代理 (同上)
-    - DIA      # Dow Jones 代理 (仅作基准，不单独分析)
+    - SPY      # S&P 500 ETF，兼作基准与可交易镜头
+    - QQQ      # Nasdaq-100 ETF，兼作基准与可交易镜头
+    - DIA      # Dow Jones ETF，兼作基准与可交易镜头
 
   # GENERAL 系列 - 宏观大盘分析虚拟标的, 不进 IBKR fetch (sec_type=IND 占位)
   # 报告落在 data/debate/{SYMBOL}/, 前端 sidebar 按 region 分大区显示
@@ -68,6 +246,7 @@ analysis_targets:
     - GENERAL          # 美国宏观 (默认; 历史无后缀)
     - GENERAL_EU       # 欧洲宏观 (Eurozone + UK)
     - GENERAL_JP       # 日本宏观
+    - GENERAL_KR       # 韩国宏观 (KOSPI 大盘; 与日本独立: BoK/KRW/新兴市场分类)
 
 # 自动运行开关:
 #   每个 symbol_contracts 条目可选字段 `runnable: true/false`, 缺省 = true
@@ -119,6 +298,206 @@ data_requirements:
 # =============================================================================
 
 symbol_contracts:
+  ADSK:
+    symbol: ADSK
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NASDAQ
+    description: "Autodesk"
+    benchmark: SPY
+    sector: IGV
+  CVX:
+    symbol: CVX
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "Chevron"
+    benchmark: SPY
+    sector: XLE
+  PEP:
+    symbol: PEP
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NASDAQ
+    description: "PepsiCo"
+    benchmark: SPY
+    sector: XLP
+  ELV:
+    symbol: ELV
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "Elevance Health"
+    benchmark: SPY
+    sector: XLV
+  COST:
+    symbol: COST
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NASDAQ
+    description: "Costco Wholesale"
+    benchmark: SPY
+    sector: XLP
+  TGT:
+    symbol: TGT
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "Target Corporation"
+    benchmark: SPY
+    sector: XLP
+  ULTA:
+    symbol: ULTA
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NASDAQ
+    description: "Ulta Beauty"
+    benchmark: SPY
+    sector: XLP
+  MA:
+    symbol: MA
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "Mastercard"
+    benchmark: SPY
+    sector: XLF
+  LDO:
+    symbol: LDO
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: BVME
+    description: "Leonardo"
+    benchmark: EXSA
+    region: EU
+    runnable: false
+  SU:
+    symbol: SU
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: SBF
+    description: "Schneider Electric"
+    benchmark: EXSA
+    region: EU
+    runnable: false
+  ABBN:
+    symbol: ABBN
+    sec_type: STK
+    exchange: SMART
+    currency: CHF
+    primary_exchange: EBS
+    description: "ABB Ltd"
+    benchmark: EXSA
+    region: EU
+    runnable: false
+  RMS:
+    symbol: RMS
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: SBF
+    description: "Hermès International"
+    benchmark: EXSA
+    region: EU
+    runnable: false
+  IBIDEN:
+    symbol: IBIDEN
+    ibkr_ticker: "4062"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Ibiden"
+    benchmark: N225
+    region: JP
+    runnable: false
+  SMFG:
+    symbol: SMFG
+    ibkr_ticker: "8316"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Sumitomo Mitsui Financial Group"
+    benchmark: N225
+    region: JP
+    runnable: false
+  MFG:
+    symbol: MFG
+    ibkr_ticker: "8411"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Mizuho Financial Group"
+    benchmark: N225
+    region: JP
+    runnable: false
+  MSBHF:
+    symbol: MSBHF
+    ibkr_ticker: "8058"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Mitsubishi Corporation"
+    benchmark: N225
+    region: JP
+    runnable: false
+  MITSY:
+    symbol: MITSY
+    ibkr_ticker: "8031"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Mitsui & Co."
+    benchmark: N225
+    region: JP
+    runnable: false
+  SHG:
+    symbol: SHG
+    ibkr_ticker: "055550"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "Shinhan Financial Group"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+  HANA:
+    symbol: HANA
+    ibkr_ticker: "086790"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "Hana Financial Group"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+  KIA:
+    symbol: KIA
+    ibkr_ticker: "000270"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "Kia Corporation"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
   # --------------------------------- Stocks --------------------------------- #
   AAPL:
     symbol: AAPL
@@ -219,6 +598,7 @@ symbol_contracts:
     sec_type: STK
     exchange: SMART
     currency: USD
+    adr: true                   # foreign issuer quoted in USD on a US venue: ADR cost surcharge (odds.yaml cost.adr_surcharge_bps)
     primary_exchange: NYSE
     description: "Taiwan Semiconductor Mfg ADR (台积电美股, 全球晶圆代工霸主, 客户 AAPL/NVDA/AMD/QCOM)"
     benchmark: QQQ
@@ -229,6 +609,7 @@ symbol_contracts:
     sec_type: STK
     exchange: SMART
     currency: USD
+    adr: true                   # foreign issuer quoted in USD on a US venue: ADR cost surcharge (odds.yaml cost.adr_surcharge_bps)
     primary_exchange: NASDAQ
     description: "ASML Holding NV ADR (阿斯麦, 全球 EUV 光刻机独家供应商, 荷兰)"
     benchmark: QQQ
@@ -284,6 +665,26 @@ symbol_contracts:
     currency: USD
     primary_exchange: NYSE
     description: "Walmart Inc. (Consumer Staples)"
+    benchmark: SPY
+    sector: XLP
+
+  MCD:
+    symbol: MCD
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "McDonald's Corp (麦当劳, 快餐)"
+    benchmark: SPY
+    sector: XLP                 # 实为可选消费成分, 池内没有对应 ETF, 按防御消费挂 XLP
+
+  KO:
+    symbol: KO
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "The Coca-Cola Company (可口可乐, 饮料/必需消费)"
     benchmark: SPY
     sector: XLP
 
@@ -357,6 +758,26 @@ symbol_contracts:
     benchmark: QQQ
     sector: ITA
 
+  # SpaceX (2026-06-12 IPO @ $135, 史上最大 IPO; 2026-07-07 已进 Nasdaq-100, 权重~1.3%,
+  # 未进 S&P 500 (标普未改方法论, 最快 2027 中))。归类推理:
+  #   Q2'26 收入结构 = Connectivity(Starlink) 4291M / AI 2561M / Space 962M → 真实主业是
+  #   卫星宽带 + AI 算力, 航天发射只占 12%。库里没有电信/卫星板块 ETF, 唯一有交集的是 ITA。
+  #   ITA 跟踪 Dow Jones US Select A&D (前五 GE/RTX/BA/GD/HWM), **不含 SPCX** →
+  #   拿 ITA 当参照系不循环, 是干净的"传统航天防务 vs SpaceX"对照, 但只能解释约 1/8 收入,
+  #   别让板块标签压过基本面 (见 evidence_map notes)。
+  #   benchmark 用 QQQ: 已是 QQQ 成分但权重仅 ~1.3%, 远未到自比循环 (对比 NVDA 禁 QQQ)。
+  #   ⚠️ 上市仅 2 个月 → 日线约 43 根: MA50/MA200/周线MA40/60d 百分位/60日相对强度都会缺,
+  #      量化腿会如实留空 (不是 bug); Stage 判定只能靠 MA20 + 结构, 别按缺失当"跌破"。
+  SPCX:
+    symbol: SPCX
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NASDAQ
+    description: "SpaceX / Space Exploration Technologies Corp (Starlink 卫星宽带 + AI 算力 + Starship 发射; 2026-06-12 上市)"
+    benchmark: QQQ
+    sector: ITA
+
   MP:
     symbol: MP
     sec_type: STK
@@ -403,12 +824,14 @@ symbol_contracts:
     region: EU                   # EU 大区"其它"组 (欧洲国防独立 → 跟 US ITA 反而脱钩)
     runnable: false
 
-  # ── 日股 (manual_only): 跟隔壁 apex_codex 工程对齐, benchmark 用 N225 (Nikkei 225) ──
+  # ── 日股 (manual_only): benchmark 用 N225 (Nikkei 225) ──
+  # canonical id = 英文简称 (ADR ticker); 东证数字代码降级到 ibkr_ticker, 只用于 IBKR 询价。
   # 任天堂 (manual_only): IBKR 没日股订阅, Claude Code 引导手动分析
-  "7974":
-    symbol: "7974"
+  NTDOY:
+    symbol: NTDOY
+    ibkr_ticker: "7974"        # 东证代码, 只用于请求 IBKR 数据
     sec_type: STK
-    exchange: SMART             # IBKR 通用路由 (跟隔壁 apex_codex 对齐)
+    exchange: SMART             # IBKR 通用路由
     currency: JPY
     primary_exchange: TSEJ      # Tokyo Stock Exchange Japan
     description: "Nintendo Co., Ltd. (任天堂, 东证 7974, 游戏)"
@@ -417,8 +840,9 @@ symbol_contracts:
     runnable: false             # 自动调度跳过, 仅前端展示
 
   # 三菱重工 (manual_only)
-  "7011":
-    symbol: "7011"
+  MHVYF:
+    symbol: MHVYF
+    ibkr_ticker: "7011"
     sec_type: STK
     exchange: SMART
     currency: JPY
@@ -429,8 +853,9 @@ symbol_contracts:
     runnable: false
 
   # 信越化学 (manual_only): 全球硅晶圆龙头, 半导体材料核心
-  "4063":
-    symbol: "4063"
+  SHECY:
+    symbol: SHECY
+    ibkr_ticker: "4063"
     sec_type: STK
     exchange: SMART
     currency: JPY
@@ -441,8 +866,9 @@ symbol_contracts:
     runnable: false
 
   # HOYA (manual_only): EUV 光罩基板独家 + HDD 玻璃
-  "7741":
-    symbol: "7741"
+  HOCPY:
+    symbol: HOCPY
+    ibkr_ticker: "7741"
     sec_type: STK
     exchange: SMART
     currency: JPY
@@ -453,8 +879,9 @@ symbol_contracts:
     runnable: false
 
   # 味之素 (manual_only): 主营食品, 但 ABF 芯片基板是 CPU/GPU 不可替代材料
-  "2802":
-    symbol: "2802"
+  AJINY:
+    symbol: AJINY
+    ibkr_ticker: "2802"
     sec_type: STK
     exchange: SMART
     currency: JPY
@@ -462,6 +889,99 @@ symbol_contracts:
     description: "味之素 Ajinomoto (ABF 芯片基板 + 食品/调味料)"
     benchmark: N225
     region: JP                   # JP 大区"其它"组
+    runnable: false
+
+  # 软银集团 (manual_only): 广基锚, 持 Arm → AI/半导体主脊; 性格像成长股/日本 QQQ 味
+  SFTBY:
+    symbol: SFTBY
+    ibkr_ticker: "9984"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "SoftBank Group (软银集团, 东证 9984, 投资控股/持 Arm/Vision Fund)"
+    benchmark: N225
+    region: JP
+    runnable: false
+
+  # 伊藤忠商事 (manual_only): 综合商社, 多元(能源/金属/食品/机械), 巴菲特持仓, 日本 Inc. 代理
+  ITOCY:
+    symbol: ITOCY
+    ibkr_ticker: "8001"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Itochu Corp (伊藤忠商事, 东证 8001, 综合商社/消费/食品/机械)"
+    benchmark: N225
+    region: JP
+    runnable: false
+
+  # ── 韩股 (manual_only): benchmark 用 KOSPI; canonical=英文/罗马音, KRX 数字→ibkr_ticker ──
+  # exchange=KSE / currency=KRW; runnable=false → 手动/CC 分析, IBKR 询价参数待上线实测
+  # 三星电子: 存储 + 代工 + 终端
+  SSNLF:
+    symbol: SSNLF
+    ibkr_ticker: "005930"      # KRX 代码, 只用于请求 IBKR 数据
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE       # Korea Stock Exchange (待上线实测)
+    description: "Samsung Electronics (三星电子, KRX 005930, 存储/代工/终端)"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+
+  # SK 海力士: HBM 龙头, 直供 NVIDIA
+  HXSCL:
+    symbol: HXSCL
+    ibkr_ticker: "000660"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "SK Hynix (SK 海力士, KRX 000660, HBM 存储龙头/供 NVIDIA)"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+
+  # 韩美半导体: HBM 键合设备 (TC bonder), 供货海力士; 对标 BESI
+  HANMISEMI:
+    symbol: HANMISEMI
+    ibkr_ticker: "042700"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "Hanmi Semiconductor (韩美半导体, KRX 042700, HBM 键合设备)"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+
+  # 韩华航空航天: K9 火炮/国防出口, 对标 RHM
+  HANWHAAERO:
+    symbol: HANWHAAERO
+    ibkr_ticker: "012450"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "Hanwha Aerospace (韩华航空航天, KRX 012450, K9 火炮/国防出口)"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+
+  # 斗山能源: 核电/SMR, 对标 CEG/VST
+  DOOSANENER:
+    symbol: DOOSANENER
+    ibkr_ticker: "034020"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "Doosan Enerbility (斗山能源, KRX 034020, 核电/SMR/发电装备)"
+    benchmark: KODEX200
+    region: KR
     runnable: false
 
   # 日经 225 指数 (纯 reference label, 不进 analysis_targets, 不被 horizon 拉取)
@@ -475,6 +995,54 @@ symbol_contracts:
     benchmark: null
     region: JP
 
+  # 东证股价指数 (GENERAL_JP 第二镜头, 2026-11-02 起; 全市场市值加权, 与价格加权的 N225 不同步时本身就是信号;
+  # 盈透 TOPX / IND / OSE.JPN, conId 17951297, 10-31 探测 L1-L3 都通; 指数无成交量, 价位只作观察线)
+  TOPX:
+    symbol: TOPX
+    sec_type: IND
+    exchange: OSE.JPN
+    currency: JPY
+    primary_exchange: OSE.JPN
+    description: "TOPIX Index (东证股价指数, 全市场市值加权; GENERAL_JP 第二镜头 2026-11-02 起)"
+    benchmark: null
+    region: JP
+
+  # 韩国大盘 benchmark。⚠️ 2026-09-28 换代: K200 指数的盈透 HMDS 历史源 2026-09-18 起断供
+  # (合约合法/旧日线可查/实时 tick 活着, 唯独不再产新 bar, 韩国个股全正常, 断供 8 天判死),
+  # KR 镜头切换为 KODEX 200 ETF(KRX 069500, 跟踪 K200, 日线实测新鲜)。K200 条目保留作历史参考。
+  K200:
+    symbol: K200
+    sec_type: IND
+    exchange: KSE
+    currency: KRW
+    primary_exchange: KSE
+    description: "KOSPI 200 Index (⚠️退役: HMDS 2026-09-18 起断供; 历史参考, 现役镜头=KODEX200)"
+    benchmark: null
+    region: KR
+
+  KODEX200:
+    symbol: KODEX200
+    ibkr_ticker: "069500"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "KODEX 200 ETF (三星资管, KRX 069500, 跟踪 KOSPI200; 2026-09-28 起 KR 大盘镜头/benchmark, 替代断供的 K200 指数; 价位量纲=KRW 十万级, 非指数点位)"
+    benchmark: null
+    region: KR
+
+  # KOSDAQ 150 指数 (GENERAL_KR 第二镜头, 2026-11-02 起; 创业板/成长股, 与 KOSPI200 大盘股分化时本身就是信号;
+  # 盈透 KOSDQ150 / IND / KSE, conId 268129100, 10-31 探测 L1-L3 都通; 指数点位(千级), 无成交量, 价位只作观察线)
+  KOSDQ150:
+    symbol: KOSDQ150
+    sec_type: IND
+    exchange: KSE
+    currency: KRW
+    primary_exchange: KSE
+    description: "KOSDAQ 150 Index (科斯达克 150, 成长/中小盘; GENERAL_KR 第二镜头 2026-11-02 起; 指数点位, 非 ETF 价)"
+    benchmark: null
+    region: KR
+
   # DAX 40 指数 (德国大盘 reference, EU 标的的 benchmark 引用)
   DAX:
     symbol: DAX
@@ -482,9 +1050,11 @@ symbol_contracts:
     exchange: EUREX
     currency: EUR
     primary_exchange: EUREX
-    description: "DAX 40 Index (德国大盘)"
+    description: "DAX 40 Index (德国大盘; context_type=etf → 宽基 ETF 分析框架)"
     benchmark: null
     region: EU
+    runnable: false             # EU 归隔壁/手动, 不进美股自动调度
+    context_type: etf           # 框架归类(合约级, 2026-09-30): 不入 analysis_targets 列表也吃宽基 ETF 框架
 
   # iShares AEX UCITS ETF (荷兰大盘代理, EU 标的的 benchmark 引用)
   # 背景: 原本想用裸 AEX 指数 (IND@FTA), 实测本账户没有历史数据订阅:
@@ -530,6 +1100,7 @@ symbol_contracts:
     primary_exchange: ARCA
     description: "SPDR Gold Shares"
     benchmark: null
+    display_group: 商品            # 前端分组(2026-11-06): 商品型 ETF(黄金 / 白银 / 石油…)一组; 无 benchmark 但有 display_group 的 ETF 自成一组, 不进"综合 / 宽基"
 
   # 板块 ETF：声明对比参照系 + 前端分组显示名 (display_group)
   SMH:
@@ -632,6 +1203,192 @@ symbol_contracts:
     description: "SPDR Dow Jones Industrial Average ETF (宏观基准用，不单独分析)"
     benchmark: null
 
+  # 证据地图对标（只作数据腿取数/备餐 peers 拉取, 不单独分析）
+  PPA:
+    symbol: PPA
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: ARCA
+    description: "Invesco Aerospace & Defense ETF (ITA 同业对标)"
+    benchmark: null
+  XAR:
+    symbol: XAR
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: ARCA
+    description: "SPDR S&P Aerospace & Defense ETF (ITA 同业对标)"
+    benchmark: null
+  GDX:
+    symbol: GDX
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: ARCA
+    description: "VanEck Gold Miners ETF (GLD 对标: 金矿股 vs 金价)"
+    benchmark: null
+  SLV:
+    symbol: SLV
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: ARCA
+    description: "iShares Silver Trust (GLD 对标: 贵金属内部分化)"
+    benchmark: null
+  XLK:
+    symbol: XLK
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: ARCA
+    description: "Technology Select Sector SPDR (IGV 同业对标)"
+    benchmark: null
+
+  # ── 待验证扩充标的 (2026-08-02) ──
+  SIE:
+    symbol: SIE
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: IBIS
+    description: "Siemens AG (西门子, 德国工业自动化/电气化)"
+    benchmark: DAX
+    region: EU
+    runnable: false
+  DBK:
+    symbol: DBK
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: IBIS
+    description: "Deutsche Bank AG (德意志银行, 欧元区银行/ECB 利率代理)"
+    benchmark: DAX
+    region: EU
+    runnable: false
+  ADS:
+    symbol: ADS
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: IBIS
+    description: "adidas AG (阿迪达斯, 德国消费品牌/中国需求)"
+    benchmark: DAX
+    region: EU
+    runnable: false
+  MC:
+    symbol: MC
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: SBF
+    description: "LVMH Moet Hennessy Louis Vuitton (奢侈品/中国需求)"
+    benchmark: EXSA
+    region: EU
+    runnable: false
+  NOVO:
+    symbol: NOVO
+    ibkr_ticker: NOVO.B
+    sec_type: STK
+    exchange: SMART
+    currency: DKK
+    primary_exchange: CPH
+    description: "Novo Nordisk A/S B (诺和诺德, GLP-1)"
+    benchmark: EXSA
+    region: EU
+    runnable: false
+  TM:
+    symbol: TM
+    ibkr_ticker: "7203"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Toyota Motor Corp (丰田, 东证 7203, 汽车/日元汇率)"
+    benchmark: N225
+    region: JP
+    runnable: false
+  MUFG:
+    symbol: MUFG
+    ibkr_ticker: "8306"
+    sec_type: STK
+    exchange: SMART
+    currency: JPY
+    primary_exchange: TSEJ
+    description: "Mitsubishi UFJ Financial Group (三菱UFJ, 东证 8306, 银行/BoJ 利率)"
+    benchmark: N225
+    region: JP
+    runnable: false
+  HYMTF:
+    symbol: HYMTF
+    ibkr_ticker: "005380"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "Hyundai Motor (现代汽车, KRX 005380, 汽车/关税/韩元)"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+  KB:
+    symbol: KB
+    ibkr_ticker: "105560"
+    sec_type: STK
+    exchange: SMART
+    currency: KRW
+    primary_exchange: KSE
+    description: "KB Financial Group (KB 金融, KRX 105560, 银行/BoK 利率/Value-up)"
+    benchmark: KODEX200
+    region: KR
+    runnable: false
+  LLY:
+    symbol: LLY
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "Eli Lilly and Company (礼来, GLP-1/医药)"
+    benchmark: SPY
+    sector: XLV
+    display_group: 医疗
+  ELF:
+    symbol: ELF
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "e.l.f. Beauty, Inc. (平价彩妆与护肤, 2025 年收购 Rhode)"
+    benchmark: SPY
+    sector: XLP                 # 个人护理属必需消费; 实际走势是高波动成长股, 与 XLP 相关性低, 读板块对比时留意
+  ABBV:
+    symbol: ABBV
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "AbbVie Inc. (艾伯维, 免疫/肿瘤/神经制药)"
+    benchmark: SPY
+    sector: XLV
+    display_group: 医疗
+  V:
+    symbol: V
+    sec_type: STK
+    exchange: SMART
+    currency: USD
+    primary_exchange: NYSE
+    description: "Visa Inc. (支付网络)"
+    benchmark: SPY
+    sector: XLF
+  EXSA:
+    symbol: EXSA
+    sec_type: STK
+    exchange: SMART
+    currency: EUR
+    primary_exchange: IBIS
+    description: "STOXX Europe 600 代理 ETF (泛欧基准)"
+    benchmark: null
+    region: EU
+
   # ── GENERAL 系列 (宏观分析虚拟标的, 不走 IBKR; sec_type=IND 占位) ──
   # 报告产出在 data/debate/{SYMBOL}/, 由 horizon_sentinel (US) 或手动 (EU/JP) 生成
   GENERAL:
@@ -641,6 +1398,10 @@ symbol_contracts:
     currency: USD
     region: US
     runnable: true              # US 由 horizon_sentinel 自动跑
+    lenses:                     # v3.4: 每镜头各一份情景各算 S_ref / 力度; 加权只是展示摘要, 不是组合最优
+      - {symbol: SPY, weight: 0.5}
+      - {symbol: QQQ, weight: 0.3}
+      - {symbol: DIA, weight: 0.2}
 
   GENERAL_EU:
     symbol: GENERAL_EU
@@ -649,14 +1410,31 @@ symbol_contracts:
     currency: EUR
     region: EU
     runnable: false             # 自动调度跳过, 手动产出
+    lenses:
+      - {symbol: DAX, weight: 0.6}
+      - {symbol: IAEX, weight: 0.4}
 
   GENERAL_JP:
     symbol: GENERAL_JP
     sec_type: IND
-    description: "日本宏观 (手动 / Claude Code 引导分析)"
+    description: "日本宏观两镜头 (N225 / TOPIX; 手动 / Claude Code 引导分析)"
     currency: JPY
     region: JP
     runnable: false
+    lenses:                     # 2026-11-02 起两镜头; 权重是默认锚(展示摘要), 不是组合最优
+      - {symbol: N225, weight: 0.6}
+      - {symbol: TOPX, weight: 0.4}
+
+  GENERAL_KR:
+    symbol: GENERAL_KR
+    sec_type: IND
+    description: "韩国宏观两镜头 (KODEX200 / KOSDAQ150; 手动 / Claude Code 引导分析)"
+    currency: KRW
+    region: KR
+    runnable: false
+    lenses:                     # 2026-11-02 起两镜头; 权重是默认锚(展示摘要), 不是组合最优
+      - {symbol: KODEX200, weight: 0.6}
+      - {symbol: KOSDQ150, weight: 0.4}
 
   # --------------------------------- Indices (已废弃，保留定义备用) --------------------------------- #
   # SPX:

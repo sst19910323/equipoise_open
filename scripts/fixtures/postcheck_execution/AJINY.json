@@ -1,0 +1,273 @@
+{
+  "report": {
+    "operation_type": "MARKET_ENTRY",
+    "operation_target": "5340",
+    "reference_prices": [
+      {
+        "as_of": "2026-10-09T03:30:00+00:00",
+        "price": 5340.0,
+        "source": "data/technical/AJINY/AJINY_technical_20261009T033000Z.json",
+        "symbol": "AJINY",
+        "session": "regular",
+        "currency": "JPY"
+      }
+    ],
+    "risk_management": {
+      "stop_loss": "5030 JPY连续两个日本常规收盘以下退出本次新增部分；这是修复交易保护，非全结构破坏。4931单次常规收盘以下重审主要参与。",
+      "take_profit": "5500 JPY是中途旧交易区检验位，不自动减持；5609 JPY连续两个常规收盘接受后重评5754 JPY与力度，不自动追价。",
+      "review_triggers": [
+        "七交易日至2026-10-21未触5609且收盘低5200.2，取消上行路径并重审新增。",
+        "N225连续两收盘低66529.5045，暂停新增，重审市场跟随及现有风险。",
+        "撤回2020亿JPY事业利润指引或明确ABF核心需求损伤，停新增核实驱动。",
+        "2026-10-19日本收盘检查5500处接受情况与剩余期限赔率；2026-10-26决策期末重评，28日会议前复核。"
+      ],
+      "max_drawdown_tolerance": "新增部分至5030约5.81%；这是设计距离，跳空及两收盘确认可超过；4931结构线距锚7.66%，4800尾部分支距锚10.11%。"
+    },
+    "next_review": {
+      "notes": "所有价位JPY，仅N225为指数点位。5340为2026-10-09 03:30 UTC唯一锚；5030约2.12ATR临近5035/5000流动性池，以两收盘确认接受早退噪音和跳空，4931约2.80ATR不是机械全清。七日与十日按未来日本交易日计，10月12日休市；23日CPI在十日窗，29至30日日银与11月9日财报在外。公司撤回2020亿指引或明确ABF核心损伤即停新增重审。",
+      "frequency_hint": "daily",
+      "recommend_after": "2026-10-19T06:30:00Z",
+      "structured_triggers": [
+        {
+          "type": "price_below",
+          "value": 5030,
+          "action": "退出本次新增部分并重审",
+          "symbol": "AJINY",
+          "condition": "连续两个日本常规收盘"
+        },
+        {
+          "type": "price_below",
+          "value": 4931,
+          "action": "重审主要参与和抬高低点结构",
+          "symbol": "AJINY",
+          "condition": "日本常规收盘"
+        },
+        {
+          "type": "price_above",
+          "value": 5500,
+          "action": "重查旧区接受与到价后的剩余期限赔率，不自动兑现",
+          "symbol": "AJINY",
+          "condition": "触价"
+        },
+        {
+          "type": "price_above",
+          "value": 5609,
+          "action": "重评5754与力度",
+          "symbol": "AJINY",
+          "condition": "连续两个日本常规收盘"
+        },
+        {
+          "type": "price_below",
+          "value": 5200.2,
+          "action": "取消上行路径并重审",
+          "symbol": "AJINY",
+          "condition": "截至2026-10-21七交易日未触5609且常规收盘下破"
+        },
+        {
+          "type": "price_below",
+          "value": 66529.5045,
+          "action": "暂停新增并重审",
+          "symbol": "N225",
+          "condition": "连续两个常规收盘"
+        },
+        {
+          "date": "2026-10-19",
+          "type": "date_reached",
+          "action": "五日复核5500接受、概率条件和残余期限"
+        },
+        {
+          "date": "2026-10-26",
+          "type": "date_reached",
+          "action": "十交易日决策期末全面重评"
+        },
+        {
+          "date": "2026-10-28",
+          "type": "date_reached",
+          "action": "日本收盘前复核日银会议共识与预期波幅"
+        }
+      ]
+    },
+    "statement": "AJINY在5340 JPY仍有受限的修复优势，54分、轻档参与，以5030两收盘保护新增并保留5500兑现反论。",
+    "mentality_basis": "八日MA20上承接和官方经营增利支持有限顺势参与，前高接受零日、普通跟随及高倍数限制力度；不是已确认主升。",
+    "market_data_timestamp_utc": "2026-10-09T03:30:00Z",
+    "data_files": {
+      "macro": {
+        "fear_greed_jp": "data/fear_greed/fear_greed_jp_latest_20261008T000000Z.json",
+        "fear_greed_us": "data/fear_greed/fear_greed_latest_20261008T000000Z.json",
+        "news_general_jp": "data/news/GENERAL_JP/GENERAL_JP_news_20261009T031919Z.json",
+        "news_general_us": "data/news/GENERAL/GENERAL_news_20261008T141515Z.json"
+      },
+      "config": "config/symbols.yaml",
+      "sector": {},
+      "symbol": {
+        "technical": "data/technical/AJINY/AJINY_technical_20261009T033000Z.json"
+      },
+      "benchmarks": {
+        "N225": "data/technical/N225/N225_technical_20261009T032900Z.json"
+      }
+    }
+  },
+  "bars": [
+    {
+      "date": "2026-10-13",
+      "open": 5379.0,
+      "high": 5425.0,
+      "low": 5181.0,
+      "close": 5291.0,
+      "vol_ratio_20d": 1.05
+    },
+    {
+      "date": "2026-10-14",
+      "open": 5273.0,
+      "high": 5482.0,
+      "low": 5250.0,
+      "close": 5440.0,
+      "vol_ratio_20d": 1.22
+    },
+    {
+      "date": "2026-10-15",
+      "open": 5420.0,
+      "high": 5420.0,
+      "low": 5203.0,
+      "close": 5237.0,
+      "vol_ratio_20d": 1.36
+    },
+    {
+      "date": "2026-10-16",
+      "open": 5211.0,
+      "high": 5332.0,
+      "low": 5206.0,
+      "close": 5280.0,
+      "vol_ratio_20d": 0.76
+    },
+    {
+      "date": "2026-10-19",
+      "open": 5328.5,
+      "high": 5329.0,
+      "low": 5080.0,
+      "close": 5263.0,
+      "vol_ratio_20d": 0.8
+    },
+    {
+      "date": "2026-10-20",
+      "open": 5281.0,
+      "high": 5283.0,
+      "low": 5154.0,
+      "close": 5230.0,
+      "vol_ratio_20d": 0.65
+    },
+    {
+      "date": "2026-10-21",
+      "open": 5190.0,
+      "high": 5380.0,
+      "low": 5190.0,
+      "close": 5278.0,
+      "vol_ratio_20d": 1.29
+    },
+    {
+      "date": "2026-10-22",
+      "open": 5253.0,
+      "high": 5275.0,
+      "low": 5040.0,
+      "close": 5046.0,
+      "vol_ratio_20d": 0.89
+    },
+    {
+      "date": "2026-10-23",
+      "open": 5046.0,
+      "high": 5064.0,
+      "low": 4922.0,
+      "close": 5064.0,
+      "vol_ratio_20d": 1.3
+    },
+    {
+      "date": "2026-10-26",
+      "open": 5033.0,
+      "high": 5085.0,
+      "low": 4961.0,
+      "close": 5013.0,
+      "vol_ratio_20d": 1.15
+    },
+    {
+      "date": "2026-10-27",
+      "open": 5044.0,
+      "high": 5182.0,
+      "low": 5035.0,
+      "close": 5110.0,
+      "vol_ratio_20d": 1.18
+    },
+    {
+      "date": "2026-10-28",
+      "open": 5150.0,
+      "high": 5257.0,
+      "low": 5111.0,
+      "close": 5129.0,
+      "vol_ratio_20d": 1.12
+    },
+    {
+      "date": "2026-10-29",
+      "open": 5137.0,
+      "high": 5200.0,
+      "low": 5057.0,
+      "close": 5138.0,
+      "vol_ratio_20d": 1.68
+    },
+    {
+      "date": "2026-10-30",
+      "open": 5142.0,
+      "high": 5151.0,
+      "low": 4979.0,
+      "close": 5118.0,
+      "vol_ratio_20d": 1.19
+    },
+    {
+      "date": "2026-11-02",
+      "open": 5120.0,
+      "high": 5154.0,
+      "low": 5052.0,
+      "close": 5128.0,
+      "vol_ratio_20d": 0.76
+    },
+    {
+      "date": "2026-11-04",
+      "open": 5086.0,
+      "high": 5111.0,
+      "low": 4801.0,
+      "close": 4945.0,
+      "vol_ratio_20d": 1.4
+    },
+    {
+      "date": "2026-11-05",
+      "open": 4989.0,
+      "high": 5080.0,
+      "low": 4852.0,
+      "close": 4872.0,
+      "vol_ratio_20d": 1.62
+    },
+    {
+      "date": "2026-11-06",
+      "open": 4872.0,
+      "high": 4880.0,
+      "low": 4217.0,
+      "close": 4268.0,
+      "vol_ratio_20d": 3.77
+    },
+    {
+      "date": "2026-11-09",
+      "open": 4284.5,
+      "high": 4500.0,
+      "low": 4284.0,
+      "close": 4430.0,
+      "vol_ratio_20d": 1.74
+    },
+    {
+      "date": "2026-11-10",
+      "open": 4430.0,
+      "high": 4677.5,
+      "low": 4110.0,
+      "close": 4345.0,
+      "vol_ratio_20d": 0.23
+    }
+  ],
+  "price_T": 5340.0
+}

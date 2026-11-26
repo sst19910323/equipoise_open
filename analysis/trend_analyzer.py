@@ -1,256 +1,316 @@
-"""
-analysis/trend_analyzer.py
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Price structure for the technical snapshot (V16, 2026-10-24).
 
-(V9 - ISO 8601 UTC Standard)
-职责: 计算 L2 (摆动点) 和 L3 (微观热机流) 的趋势结构。
-修正: 
-1. L3 Micro Flow Engine: 时间戳格式从 "MM-DD HH:MM" 强制修正为 ISO 8601 (YYYY-MM-DDTHH:MM:SS+00:00)。
-2. 统一所有时间输出为 UTC ISO 格式，消除歧义。
+One causal algorithm shared by the three structure layers (daily / hourly / 5-minute):
+``atr_zigzag`` — ATR-adaptive reversal confirmation with strictly alternating highs and lows,
+stage-switchable thresholds (L1 uses a coarse far stage and a fine near stage), an explicit
+provisional (unconfirmed) right end and an anchor at the last completed bar.
+
+Plus ``price_digest`` — the "telescope" OHLCV digest of the last two years (quarterly → monthly →
+weekly → daily), parameter-free, so the snapshot is self-contained: blurrier the further back,
+sharper the closer to now.
+
+Design: docs/design/reorg/technical-snapshot-v16-2026-10-24.md §2.
+Causality contract (tested): with fixed parameters, appending future bars never changes an
+already confirmed pivot (price, time, confirmed_at, threshold); only ``provisional`` / ``anchor``
+move. The centered-window swing finder and the RDP polyline of the old versions are gone; the
+old ``calculate_swing_points`` name stays as a thin wrapper for the postcheck caller.
 """
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass
-from datetime import datetime, timezone
 
-# ──────────────────────────── L2: Swing Points (战术结构) ──────────────────────────── #
 
-def identify_swings(df: pd.DataFrame, lookback: int = 20) -> pd.DataFrame:
-    """
-    识别高低点 (Fractals / Pivot Points)
-    """
-    highs = df['high']
-    lows = df['low']
-    
-    # 简单的滚动窗口极值判断
-    # 实际上这里用 argrelextrema 或 rolling max/min 都可以
-    # 这里为了稳健，使用 rolling 窗口判断前后
-    
-    # 标记 High Pivot: 当前 High 是前后 window 范围内的最大值
-    is_high = highs == highs.rolling(window=lookback*2+1, center=True).max()
-    
-    # 标记 Low Pivot
-    is_low = lows == lows.rolling(window=lookback*2+1, center=True).min()
-    
-    swings = []
-    
-    for idx, row in df[is_high].iterrows():
-        swings.append({
-            'date': idx,
-            'price': row['high'],
-            'type': 'High'
-        })
-        
-    for idx, row in df[is_low].iterrows():
-        swings.append({
-            'date': idx,
-            'price': row['low'],
-            'type': 'Low'
-        })
-    
-    # 按时间排序
-    swing_df = pd.DataFrame(swings)
-    if not swing_df.empty:
-        swing_df = swing_df.sort_values('date')
-    
-    return swing_df
+# ───────────────────────────── ATR helpers (causal) ───────────────────────────── #
 
-def calculate_swing_points(df: pd.DataFrame, lookback_window: int = 20, min_swing_pct: float = 0.015, max_points: int = 20) -> Optional[Dict[str, Any]]:
-    """
-    计算关键摆动点 (Pivots)，并进行幅度过滤。
-    """
-    if df.empty or len(df) < lookback_window * 2:
-        return None
+def wilder_atr_pct(df: pd.DataFrame, length: int = 14) -> pd.Series:
+    """Wilder ATR divided by close, in percent, per bar; NaN until ``length`` true ranges exist.
+    Causal: value at t uses bars ≤ t only."""
+    high, low, close = df["high"].astype(float), df["low"].astype(float), df["close"].astype(float)
+    prev_close = close.shift(1)
+    tr = pd.concat([high - low, (high - prev_close).abs(), (low - prev_close).abs()], axis=1).max(axis=1)
+    tr.iloc[0] = float(high.iloc[0] - low.iloc[0])
+    atr = tr.ewm(alpha=1.0 / length, adjust=False, min_periods=length).mean()
+    return (atr / close * 100.0).astype(float)
 
-    try:
-        raw_swings = identify_swings(df, lookback=lookback_window)
-        
-        if raw_swings.empty:
+
+def causal_median(values: pd.Series, window: int = 60, min_valid: int = 14) -> pd.Series:
+    """Rolling median over the last ``window`` valid values up to and including t; NaN until
+    ``min_valid`` valid values exist. Never looks forward."""
+    out = values.rolling(window=window, min_periods=min_valid).median()
+    return out
+
+
+# ───────────────────────────── the zigzag state machine ───────────────────────────── #
+
+@dataclass
+class Stage:
+    start_idx: int           # bar index (0-based, in the df handed in) where this stage's thresholds take over
+    k: float
+    floor_pct: float
+    cap_pct: float
+
+    def threshold(self, atr_pct_median: float) -> Optional[float]:
+        if atr_pct_median is None or not np.isfinite(atr_pct_median):
             return None
+        return float(min(max(self.k * atr_pct_median, self.floor_pct), self.cap_pct))
 
-        # 过滤幅度太小的波动 (Noise Filter)
-        filtered_swings = []
-        last_price = None
-        
-        for _, row in raw_swings.iterrows():
-            current_price = row['price']
-            if last_price is None:
-                filtered_swings.append(row)
-                last_price = current_price
-                continue
-            
-            change = abs(current_price - last_price) / last_price
-            if change >= min_swing_pct:
-                filtered_swings.append(row)
-                last_price = current_price
-        
-        # 限制数量，取最近的 N 个
-        result_swings = filtered_swings[-max_points:]
-        
-        # 格式化输出
-        pivots_out = []
-        for row in result_swings:
-            # 🔥 关键修正: 确保日期是 ISO 格式
-            ts = row['date']
-            if isinstance(ts, pd.Timestamp):
-                ts_str = ts.isoformat()
-            else:
-                ts_str = str(ts)
-                
-            pivots_out.append({
-                "date": ts_str,
-                "price": round(float(row['price']), 2),
-                "type": row['type']
-            })
-            
-        return {
-            "description": f"摆动点 (Lookback: {lookback_window}, MinPct: {min_swing_pct*100:.1f}%)",
-            "pivots": pivots_out
-        }
 
-    except Exception as e:
-        # logging.error(f"Error in calculate_swing_points: {e}")
+def _bar_end(index: pd.DatetimeIndex, i: int, bar_ends: Optional[Sequence] = None):
+    """End time of bar i: caller-supplied (session-aware) ends if given, else the bar start itself."""
+    if bar_ends is not None:
+        return bar_ends[i]
+    return index[i]
+
+
+def _ts(x) -> Optional[str]:
+    """Compact UTC stamp: 'YYYY-MM-DD' for midnight (daily bars), else 'YYYY-MM-DDTHH:MMZ' (keeps the thin view small)."""
+    if x is None:
         return None
+    if isinstance(x, pd.Timestamp):
+        t = x.tz_convert("UTC") if x.tzinfo is not None else x
+        if t.hour == 0 and t.minute == 0 and t.second == 0:
+            return t.strftime("%Y-%m-%d")
+        return t.strftime("%Y-%m-%dT%H:%MZ")
+    return str(x)
 
 
-# ──────────────────────────── L3: Micro Flow Engine (微观热机) ──────────────────────────── #
+def atr_zigzag(df: pd.DataFrame, stages: Sequence[Stage] | Sequence[Tuple[int, float, float, float]],
+               atr_len: int = 14, atr_median_len: int = 60, bar_ends: Optional[Sequence] = None,
+               layer: str = "", symbol: str = "") -> Optional[Dict[str, Any]]:
+    """Causal, strictly alternating, ATR-adaptive reversal pivots.
 
-def _rdp_simplify(points, epsilon):
+    df: completed bars only (open/high/low/close), DatetimeIndex = bar start, RTH-filtered by the caller.
+    stages: ordered list of (start_idx, k, floor_pct, cap_pct); the first should start at 0.
+    bar_ends: optional per-bar end timestamps (session aware) used for confirmed_at / anchor_t.
+
+    Rules (design §2.1):
+      - threshold(t) = clip(k × median(ATR%_14 over bars ≤ t, last ``atr_median_len`` valid), floor, cap);
+        the threshold recorded on a candidate is the one in force when the candidate was set/updated.
+      - a candidate high (low) is confirmed when a completed bar CLOSES ≥ threshold below (above) it;
+        confirmed_at = that bar's end; the new candidate of the opposite kind is that bar's low (high).
+      - candidates update only on strictly more extreme prices (ties keep the earlier time).
+      - the first bar seeds both a high and a low candidate; whichever is confirmed first wins,
+        the other is dropped (same-bar tie → the side consistent with the bar's open→close direction).
+      - no confirmation is allowed before the ATR median has ``min_valid`` values (candidates still track).
     """
-    Ramer-Douglas-Peucker 算法简化曲线
-    points: list of [x, y]
-    """
-    dmax = 0.0
-    index = 0
-    end = len(points) - 1
-    
-    for i in range(1, end):
-        d = _perpendicular_distance(points[i], points[0], points[end])
-        if d > dmax:
-            index = i
-            dmax = d
-            
-    res = []
-    if dmax > epsilon:
-        rec_results1 = _rdp_simplify(points[:index+1], epsilon)
-        rec_results2 = _rdp_simplify(points[index:], epsilon)
-        res = rec_results1[:-1] + rec_results2
-    else:
-        res = [points[0], points[end]]
-        
-    return res
+    if df is None or len(df) == 0:
+        return None
+    n = len(df)
+    st = [s if isinstance(s, Stage) else Stage(*s) for s in stages]
+    st.sort(key=lambda s: s.start_idx)
+    if not st or st[0].start_idx != 0:
+        raise ValueError("first stage must start at index 0")
 
-def _perpendicular_distance(pt, line_start, line_end):
-    if line_start[0] == line_end[0]:
-        return abs(pt[0] - line_start[0])
-    
-    m = (line_end[1] - line_start[1]) / (line_end[0] - line_start[0])
-    b = line_start[1] - m * line_start[0]
-    
-    # Distance from point (x0, y0) to line mx - y + b = 0
-    return abs(m * pt[0] - pt[1] + b) / np.sqrt(m**2 + 1)
+    highs = df["high"].astype(float).to_numpy()
+    lows = df["low"].astype(float).to_numpy()
+    closes = df["close"].astype(float).to_numpy()
+    opens = df["open"].astype(float).to_numpy() if "open" in df.columns else closes
+    atr_pct = wilder_atr_pct(df, atr_len)
+    med = causal_median(atr_pct, atr_median_len, min_valid=atr_len).to_numpy()
+    idx = df.index
+
+    def stage_at(i: int) -> Stage:
+        cur = st[0]
+        for s in st:
+            if s.start_idx <= i:
+                cur = s
+        return cur
+
+    def thr_at(i: int) -> Optional[float]:
+        return stage_at(i).threshold(med[i])
+
+    confirmed: List[list] = []
+    # candidate state: direction None at seed; 'up' means we are tracking a candidate HIGH (leg rising)
+    direction: Optional[str] = None
+    cand_hi = {"i": 0, "price": highs[0], "thr": thr_at(0)}
+    cand_lo = {"i": 0, "price": lows[0], "thr": thr_at(0)}
+
+    def confirm(cand: dict, kind: str, i: int, prev_price: Optional[float]):
+        leg = None if prev_price in (None, 0) else round((float(cand["price"]) / float(prev_price) - 1.0) * 100.0, 2)
+        confirmed.append([_ts(idx[cand["i"]]), round(float(cand["price"]), 4), kind,
+                          _ts(_bar_end(idx, i, bar_ends)), leg,
+                          None if cand["thr"] is None else round(float(cand["thr"]), 3)])
+
+    for i in range(1, n):
+        thr_now = thr_at(i)
+        c = closes[i]
+        # a candidate set during ATR warm-up has no threshold yet: it takes the first one that becomes
+        # available (still causal — nothing after bar i is used); later updates re-record as usual
+        if thr_now is not None:
+            if cand_hi["thr"] is None:
+                cand_hi["thr"] = thr_now
+            if cand_lo["thr"] is None:
+                cand_lo["thr"] = thr_now
+        if direction is None:
+            # seed phase: track both candidates, confirm whichever reverses first
+            if highs[i] > cand_hi["price"]:
+                cand_hi = {"i": i, "price": highs[i], "thr": thr_now}
+            if lows[i] < cand_lo["price"]:
+                cand_lo = {"i": i, "price": lows[i], "thr": thr_now}
+            hi_ok = cand_hi["thr"] is not None and c <= cand_hi["price"] * (1 - cand_hi["thr"] / 100.0)
+            lo_ok = cand_lo["thr"] is not None and c >= cand_lo["price"] * (1 + cand_lo["thr"] / 100.0)
+            if hi_ok and lo_ok:
+                # same-bar tie: follow the bar's own open→close direction
+                if c < opens[i]:
+                    lo_ok = False
+                else:
+                    hi_ok = False
+            if hi_ok:
+                confirm(cand_hi, "H", i, None)
+                direction = "down"
+                cand_lo = {"i": i, "price": lows[i], "thr": thr_now}
+            elif lo_ok:
+                confirm(cand_lo, "L", i, None)
+                direction = "up"
+                cand_hi = {"i": i, "price": highs[i], "thr": thr_now}
+            continue
+
+        if direction == "up":
+            if highs[i] > cand_hi["price"]:
+                cand_hi = {"i": i, "price": highs[i], "thr": thr_now}
+            elif cand_hi["thr"] is not None and c <= cand_hi["price"] * (1 - cand_hi["thr"] / 100.0):
+                confirm(cand_hi, "H", i, confirmed[-1][1] if confirmed else None)
+                direction = "down"
+                cand_lo = {"i": i, "price": lows[i], "thr": thr_now}
+        else:  # down: tracking a candidate LOW
+            if lows[i] < cand_lo["price"]:
+                cand_lo = {"i": i, "price": lows[i], "thr": thr_now}
+            elif cand_lo["thr"] is not None and c >= cand_lo["price"] * (1 + cand_lo["thr"] / 100.0):
+                confirm(cand_lo, "L", i, confirmed[-1][1] if confirmed else None)
+                direction = "up"
+                cand_hi = {"i": i, "price": highs[i], "thr": thr_now}
+
+    last_close = float(closes[-1])
+    provisional = None
+    if direction == "up":
+        cnd = cand_hi
+        retrace = round((last_close / cnd["price"] - 1.0) * 100.0, 2)
+        provisional = [_ts(idx[cnd["i"]]), round(float(cnd["price"]), 4), "H", retrace,
+                       None if cnd["thr"] is None else round(float(cnd["thr"]), 3)]
+    elif direction == "down":
+        cnd = cand_lo
+        retrace = round((last_close / cnd["price"] - 1.0) * 100.0, 2)
+        provisional = [_ts(idx[cnd["i"]]), round(float(cnd["price"]), 4), "L", retrace,
+                       None if cnd["thr"] is None else round(float(cnd["thr"]), 3)]
+
+    tag = f"[{symbol} {layer}]".strip("[] ") if (symbol or layer) else ""
+    schema = ((f"[{tag}] " if tag else "") +
+              "confirmed cols: t,price,type,confirmed_at,leg_pct,threshold_pct; "
+              "provisional cols: t,price,type,retrace_so_far_pct,threshold_pct")
+    return {
+        "schema": schema,
+        "confirmed": confirmed,
+        "provisional": provisional,
+        "anchor_t": _ts(_bar_end(idx, n - 1, bar_ends)),
+        "anchor_last": round(last_close, 4),
+        "stages": "; ".join(f"k={s.k:g}/floor={s.floor_pct:g}/cap={s.cap_pct:g} from bar {s.start_idx}" for s in st),
+        "coverage_from": _ts(idx[0]),
+        "coverage_to": _ts(_bar_end(idx, n - 1, bar_ends)),
+        "coverage_bars": int(n),
+    }
+
+
+# Layer parameter sets (design §2.2). L1 stages are expressed relative to the window: far stage
+# from bar 0, near stage from the bar 126 trading days before the end.
+L1_FAR = (3.5, 4.0, 22.0)
+L1_NEAR = (1.8, 1.5, 12.0)
+L2_PARAMS = (2.2, 0.5, 6.0)
+L3_PARAMS = (3.0, 0.20, 3.0)
+
+
+def l1_stages(n_bars: int, near_bars: int = 126) -> List[Stage]:
+    split = max(0, n_bars - near_bars)
+    if split == 0:
+        return [Stage(0, *L1_NEAR)]
+    return [Stage(0, *L1_FAR), Stage(split, *L1_NEAR)]
+
+
+# ───────────────────────────── telescope digest ───────────────────────────── #
+
+def price_digest(df_1d: pd.DataFrame, long_run_vol_mean: Optional[float] = None,
+                 has_volume: bool = True) -> Dict[str, Any]:
+    """Four exclusive, contiguous segments by trading-day index over the last ≤504 completed daily bars
+    (design §2.3): daily = D[-10:], weekly = D[-73:-10] by ISO week, monthly = D[-252:-73] by calendar
+    month, quarterly = D[:-252] by calendar quarter. Rows: [period, open, high, low, close, vol_rel,
+    trading_days]; vol_rel = segment-row mean daily volume ÷ two-year mean daily volume (None if no volume).
+    Boundary buckets may be partial calendar periods; ``period`` shows the actual first..last trading day."""
+    d = df_1d.tail(504)
+    n = len(d)
+    if n == 0:
+        return {}
+    vol = d["volume"].astype(float) if ("volume" in d.columns and has_volume) else None
+    base = long_run_vol_mean
+    if vol is not None and (base is None or not np.isfinite(base) or base <= 0):
+        base = float(vol.mean()) if len(vol) else None
+
+    def rows(seg: pd.DataFrame, grouper) -> List[list]:
+        out: List[list] = []
+        if seg is None or len(seg) == 0:
+            return out
+        for _, g in seg.groupby(grouper(seg.index), sort=True):
+            if len(g) == 0:
+                continue
+            vr = None
+            if vol is not None and base:
+                vr = round(float(g["volume"].astype(float).mean()) / base, 2)
+            out.append([f"{g.index[0].date()}..{g.index[-1].date()}", round(float(g['open'].iloc[0]), 4),
+                        round(float(g['high'].max()), 4), round(float(g['low'].min()), 4),
+                        round(float(g['close'].iloc[-1]), 4), vr, int(len(g))])
+        return out
+
+    daily = d.iloc[-10:]
+    weekly = d.iloc[-73:-10] if n > 10 else d.iloc[0:0]
+    monthly = d.iloc[-252:-73] if n > 73 else d.iloc[0:0]
+    quarterly = d.iloc[:-252] if n > 252 else d.iloc[0:0]
+    iso_week = lambda ix: [f"{t.isocalendar()[0]}-W{t.isocalendar()[1]:02d}" for t in ix]
+    month = lambda ix: [f"{t.year}-{t.month:02d}" for t in ix]
+    quarter = lambda ix: [f"{t.year}-Q{(t.month - 1) // 3 + 1}" for t in ix]
+    schema = "cols: period(first..last trading day),open,high,low,close,vol_rel(row mean daily vol ÷ 2y mean daily vol),trading_days"
+    return {
+        "schema": schema,
+        "quarterly": rows(quarterly, quarter),
+        "monthly": rows(monthly, month),
+        "weekly": rows(weekly, iso_week),
+        "daily": [[f"{t.date()}..{t.date()}", round(float(r['open']), 4), round(float(r['high']), 4),
+                   round(float(r['low']), 4), round(float(r['close']), 4),
+                   (round(float(r['volume']) / base, 2) if (vol is not None and base) else None), 1]
+                  for t, r in daily.iterrows()],
+    }
+
+
+# ───────────────────────────── compatibility wrapper ───────────────────────────── #
+
+def calculate_swing_points(df: pd.DataFrame, lookback_window: int = 20, min_swing_pct: float = 0.015,
+                           max_points: int = 20) -> Optional[Dict[str, Any]]:
+    """Kept for workflows/postcheck_quant.py (HOLD alternatives read swing levels registered at T).
+    The old centered-window / fixed-percent parameters are accepted and ignored; the result comes from
+    the same causal ATR zigzag the debaters see (single near-stage daily parameters), so the reckoner
+    and the debaters measure with one ruler. Returns {"pivots": [{date, price, type}], "provisional": {...}|None}."""
+    if df is None or len(df) < 20:
+        return None
+    try:
+        z = atr_zigzag(df, [Stage(0, *L1_NEAR)])
+    except Exception:
+        return None
+    if not z:
+        return None
+    pivots = [{"date": c[0], "price": c[1], "type": "high" if c[2] == "H" else "low", "confirmed_at": c[3]}
+              for c in z["confirmed"]]
+    prov = None
+    if z["provisional"]:
+        p = z["provisional"]
+        prov = {"date": p[0], "price": p[1], "type": "high" if p[2] == "H" else "low", "retrace_so_far_pct": p[3]}
+    return {"description": "causal ATR zigzag (V16); pivots are confirmed highs/lows, provisional is the unconfirmed right end",
+            "pivots": pivots, "provisional": prov}
+
 
 def calculate_simplified_trend(df: pd.DataFrame, target: int = 30) -> Optional[Dict[str, Any]]:
-    """
-    使用 RDP 算法提取 L3 微观热机流 (Micro Flow)。
-    二分搜索 epsilon，硬上限 target 个关键点。
-    盘前盘后的小噪声因幅度小在归一化空间里被自然过滤，
-    真正的盘后拐点因幅度够大会自然保留。
-    """
-    if df.empty or len(df) < 50:
-        return None
-
-    try:
-        prices = df['close'].values
-        dates = df.index
-
-        y_min, y_max = prices.min(), prices.max()
-        y_range = y_max - y_min if y_max > y_min else 1.0
-
-        points_with_idx = []
-        for i in range(len(prices)):
-            norm_y = (prices[i] - y_min) / y_range
-            norm_x = i / len(prices)
-            points_with_idx.append([norm_x, norm_y, i])
-
-        def _rdp_idx(pts, eps):
-            dmax = 0.0
-            index = 0
-            end = len(pts) - 1
-            for i in range(1, end):
-                d = _perpendicular_distance(pts[i], pts[0], pts[end])
-                if d > dmax:
-                    index = i
-                    dmax = d
-            if dmax > eps:
-                r1 = _rdp_idx(pts[:index+1], eps)
-                r2 = _rdp_idx(pts[index:], eps)
-                return r1[:-1] + r2
-            else:
-                return [pts[0], pts[end]]
-
-        # 二分搜索 epsilon，使输出点数 <= target
-        lo, hi = 0.0001, 1.0
-        simplified_pts = points_with_idx  # fallback
-        for _ in range(30):
-            mid = (lo + hi) / 2
-            result = _rdp_idx(points_with_idx, mid)
-            if len(result) > target:
-                lo = mid  # 太多点，epsilon要更大
-            else:
-                simplified_pts = result
-                hi = mid  # 还有余量，可以更精细
-                if len(result) >= target - 5:
-                    break  # 接近target了，够用
-        
-        # 构建输出序列
-        flow_sequence = []
-        prev_price = None
-        
-        for pt in simplified_pts:
-            idx = int(pt[2])
-            ts = dates[idx]
-            close_p = prices[idx]
-            
-            # 计算该节点的相对成交量 (Relative Volume)
-            # 取前后 3 根 K 线的平均量 vs 20根均量
-            start_loc = max(0, idx - 3)
-            end_loc = min(len(df), idx + 4)
-            local_vol = df['volume'].iloc[start_loc:end_loc].mean()
-            avg_vol = df['volume'].rolling(20).mean().iloc[idx]
-            
-            vol_rel = round(local_vol / avg_vol, 2) if avg_vol > 0 else 1.0
-            
-            # 计算波段涨跌幅
-            pct = 0.0
-            if prev_price:
-                pct = round((close_p - prev_price) / prev_price * 100, 2)
-            
-            # 🔥 核心修正: 强制使用 ISO 8601 UTC 格式
-            # 无论原始数据是 UTC 还是 Naive，都尝试标准化
-            if isinstance(ts, pd.Timestamp):
-                # 如果有 timezone，isoformat 会带上 +00:00
-                # 如果没有 (Naive)，我们假设它是 UTC 并加上 Z (或者让它保持 Naive 但用 ISO 格式)
-                # 按照 InteractiveStockFetcher V3 的逻辑，这里应该是 UTC Aware 的
-                time_str = ts.isoformat()
-            else:
-                time_str = str(ts)
-
-            flow_sequence.append({
-                "time": time_str,  # Fixed: YYYY-MM-DDTHH:MM:SS+00:00
-                "close": round(float(close_p), 2),
-                "cumulative_pct_from_prev_swing_node": pct,    # 旧名 pct: DP 简化后从上一节点的累计涨跌%
-                "local_7bar_vol_vs_20bar_rolling": vol_rel,    # 旧名 vol_rel: 节点前后 7 根均量 vs 20 根 rolling 均量
-            })
-
-            prev_price = close_p
-
-        return {
-            "description": "DP简化流 (字段名自描述; 末节点若落非regular session, vol字段会被上游置 null)",
-            "flow_sequence": flow_sequence
-        }
-
-    except Exception as e:
-        # logging.error(f"Error in calculate_simplified_trend: {e}")
-        return None
+    """Retired (V16): the RDP polyline had no financial semantics and duplicated the hourly layer.
+    Kept only so old imports do not break during the builder rewrite; always returns None."""
+    return None

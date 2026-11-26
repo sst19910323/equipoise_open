@@ -1,0 +1,62 @@
+# 值班循环(duty loop)参数 —— scripts/duty_status.py / scripts/duty.sh 读。只有库主改。
+# 来历: docs/design/autonomy/DUTY-LOOP-2026-11-03.md(库主 11-03 答复)。
+
+# Hermes 呼吸间隔(分钟), 只是采样频率; 跑不跑由每个标的自己的到期条件定
+breath_minutes: 10
+
+# 辩论并发池上限(沿用 dispatcher 默认)
+max_parallel: 8
+
+# 每次起床最多起几个: 让池子靠连续几次呼吸慢慢填, 美股不集中在一个时刻
+# [11-04 停用: 起几个交给值班 codex 按周额度+雷达判断] max_launch_per_wake: 3
+
+# 分组闸(库主 11-03: 几个一组, 跑完看看剩多少再起下一组): 在跑的辩论数 ≤ 这个数才允许起新一组; 池上限 max_parallel 仍是硬顶
+# [11-04 停用: 起几个交给值班 codex 按周额度+雷达判断] launch_when_running_at_most: 2
+
+# 报告的 recommend_after 只写了日期(近 7 天约 1/4)时, 当作该日这个 UTC 时刻到期(区域缺省班次; 库主可改):
+#   US 13:30 = 北京 21:30 盘前(买了盘前数据) · EU 08:30 = Xetra 开盘后半小时 · JP/KR 00:30 = 开盘后半小时
+default_slot_utc: {US: "13:30", EU: "08:30", JP: "00:30", KR: "00:30"}
+
+# Example worker capacities inherited from the source configuration; calibrate for your own accounts.
+# 真正选谁由 duty_status.pick_harness 按节奏算(各自到重置前的余量), 这个顺序只定平手
+harness_priority: [codex1, codex2, codex3, codex4]
+weekly_units_at_85: {codex1: 80, codex2: 80, codex3: 40, codex4: 40}
+usage_stop_used_pct: {codex1: 85, codex2: 85, codex3: 85, codex4: 85}
+
+# 配额视野(库主 11-03): 日配额 = 剩余场数 ÷ 视野内的交易日数; 视野 = min(到 resets_at, expected_reset_days); 周末休市不算天
+# [11-04 停用: 起几个交给值班 codex 按周额度+雷达判断] expected_reset_days: 4
+
+# 周期内前紧后松(库主 11-03): 停派线在离重置最后 stop_relax_days 天内线性放开到 final_day_stop_pct, 最后一天不留
+stop_relax_days: 2
+final_day_stop_pct: 100
+
+# tibo 重置雷达(codex-reset.com/api/feed 的 signal.active): 开着 = 要硬重置了, 停派线直接 100%, 日配额作废, 填满池子烧
+reset_radar: true
+reset_feed_url: https://codex-reset.com/api/feed
+
+# 额度采样过旧(分钟)就当未知, 不派
+usage_max_stale_minutes: 1440
+
+# 兜底: 被叫醒的呼吸里连续多少次"到期却没被起"之后标 backstop(值班 Codex 优先处理); 只在真叫醒后计数, 状态脚本自己跑不算
+backstop_skips: 6
+
+# 日配额的借用: 每次起床最多比 today_left 多起这么多(burn 时不限)
+# [11-04 停用: 起几个交给值班 codex 按周额度+雷达判断] borrow_allowance: 1
+
+# 数据窗口(库主 11-03): 美股买了盘前盘后数据, 延长时段也算有数据(交易所时钟里 US 含 04:00–20:00 ET);
+# 欧日韩只有免费的盘中 15 分钟延迟数据 → 只在常规时段跑, 外加收盘后这么多分钟的宽限(日 K 刚完整)。窗外的到期标的等着, 不算到期。
+after_close_grace_minutes: 90
+
+# 盈透探针用的标的与端口
+probe_symbol: SPY
+ibkr_port: 4001
+
+# 同一批到期、空位没变多时, 叫醒 codex 后多久内不再叫(分钟)
+wake_cooldown_minutes: 30
+
+# 值班 Codex 可以把到期标的推迟到一个具体时刻(决定文件的 defer[]); 最多推迟这么多小时, 超过的被截到上限; 撞线 / 财报落地的标的推迟无效
+max_defer_hours: 24
+
+# 背离度(2026-11-06, 替代撞线; scripts/divergence.py): 报告自己的情景树(路径混合, σ = ATR%·√t)对最新价的 PIT 尾概率。
+# tail < dead_tail = 树死(`tree dead:`, 唯一的硬理由, 压过推迟); < drift_tail = 漂移(`drift:`, 软); 其余 inside 不算到期。两个数待两周样本校准。
+divergence: {dead_tail: 0.05, drift_tail: 0.25}

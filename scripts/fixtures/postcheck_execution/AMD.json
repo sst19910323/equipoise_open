@@ -1,0 +1,289 @@
+{
+  "report": {
+    "operation_type": "LIMIT_ENTRY",
+    "operation_target": "596",
+    "reference_prices": [
+      {
+        "as_of": "2026-10-09T14:16:00+00:00",
+        "price": 612.57,
+        "source": "data/technical/AMD/AMD_technical_20261009T141600Z.json",
+        "symbol": "AMD",
+        "session": "regular",
+        "currency": "USD"
+      }
+    ],
+    "risk_management": {
+      "stop_loss": "514美元触价即停买重审，不自动止损卖出、不临场拉远；官方核心采购削减、重大交付延期或付款困难为论文撤销事件。584.73连续两正规收盘失守仅触发结构和概率重评。",
+      "take_profit": "596成交的修复仓在645.35美元触价分批兑现轻档，兑现平台修复；剩余转常规趋势纪律，若此前有实质超预期或658.52正规收盘突破并再守一日则撤旧平台计划重评。",
+      "review_triggers": [
+        "596触价前检查官方核心损伤，无新增直接损伤按质量修复执行，豁免守稳确认；现金、客户信用未知限制轻档。",
+        "514触价停买；584.73连续两正规收盘失守重评。",
+        "正规收盘出595.55-637.89清算五日路径。",
+        "QQQ低738.205且SMH低598.1175并次日均未收回，联合重评一笔市况风险。",
+        "658.52收盘突破且次日守住，重估新高接受与平台兑现。",
+        "10月14日CPI复查，10月16日未成交596单到期撤单不续、已成交重评；旧单不自动延至11月3日21:00 UTC财报。"
+      ],
+      "max_drawdown_tolerance": "596至514约13.76%仅为停买重审距离，不是可保证的最大亏损；只一格PILOT_SIZE，不自动向下追加。"
+    },
+    "next_review": {
+      "notes": "全为USD。596是质量修复单格触价、官方核心损伤检查通过才执行；645.35是修复仓触价分批兑现，不是同时发出的第二主操作。514触价停买，584.73两正规收盘重评；595.55/637.89正规收盘出沿清算路径；658.52正规收盘突破再守一日撤旧平台计划。QQQ/SMH必须联合失守且次日未收回，只算一笔风险。10月14日CPI复查，16日未成单到期不自动续。公司财报11月3日21:00 UTC不属于至10月30日评分窗，财报前后另查敞口；后段宏观节点不自动续旧单。官方采购、延期、付款事件随时触发撤单重审。",
+      "frequency_hint": "2-day",
+      "recommend_after": "2026-10-14T12:30:00Z",
+      "structured_triggers": [
+        {
+          "type": "price_below",
+          "value": 514,
+          "symbol": "AMD"
+        },
+        {
+          "type": "price_below",
+          "value": 584.73,
+          "symbol": "AMD"
+        },
+        {
+          "type": "price_below",
+          "value": 595.55,
+          "symbol": "AMD"
+        },
+        {
+          "type": "price_above",
+          "value": 637.89,
+          "symbol": "AMD"
+        },
+        {
+          "type": "price_above",
+          "value": 658.52,
+          "symbol": "AMD"
+        },
+        {
+          "type": "price_below",
+          "value": 738.205,
+          "symbol": "QQQ"
+        },
+        {
+          "type": "price_below",
+          "value": 598.1175,
+          "symbol": "SMH"
+        },
+        {
+          "type": "price_below",
+          "value": 596,
+          "symbol": "AMD"
+        },
+        {
+          "type": "price_above",
+          "value": 645.35,
+          "symbol": "AMD"
+        },
+        {
+          "date": "2026-10-14",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-10-16",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-10-27",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-10-29",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-10-30",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-11-03",
+          "type": "date_reached"
+        }
+      ]
+    },
+    "statement": "现价仅薄正优势，596美元一格轻档质量修复，514停买重审；短期仍看平台震荡。",
+    "mentality_basis": "Z1/R3结构未坏、A.EV3实际现金底座及Z2/R2未证采购损伤支持质量修复；价格已回撤而小时弱，选择596一格轻接，未查清信用与估值压低力度。",
+    "market_data_timestamp_utc": "2026-10-09T14:16:00Z",
+    "data_files": {
+      "macro": {
+        "fear_greed_us": "data/fear_greed/fear_greed_latest_20261008T000000Z.json",
+        "news_general_us": "data/news/GENERAL/GENERAL_news_20261009T141947Z.json"
+      },
+      "config": "config/symbols.yaml",
+      "sector": {
+        "SMH": "data/technical/SMH/SMH_technical_20261009T141600Z.json",
+        "SMH_news": "data/news/SMH/SMH_news_20261009T141950Z.json"
+      },
+      "symbol": {
+        "news": "data/news/AMD/AMD_news_20261009T141948Z.json",
+        "technical": "data/technical/AMD/AMD_technical_20261009T141600Z.json"
+      },
+      "benchmarks": {
+        "QQQ": "data/technical/QQQ/QQQ_technical_20261009T141600Z.json"
+      }
+    }
+  },
+  "bars": [
+    {
+      "date": "2026-10-12",
+      "open": 599.93,
+      "high": 601.77,
+      "low": 586.54,
+      "close": 594.24,
+      "vol_ratio_20d": 0.69
+    },
+    {
+      "date": "2026-10-13",
+      "open": 577.5,
+      "high": 606.2,
+      "low": 570.6,
+      "close": 605.53,
+      "vol_ratio_20d": 0.84
+    },
+    {
+      "date": "2026-10-14",
+      "open": 589.57,
+      "high": 591.88,
+      "low": 567.0,
+      "close": 570.82,
+      "vol_ratio_20d": 0.98
+    },
+    {
+      "date": "2026-10-15",
+      "open": 540.0,
+      "high": 568.62,
+      "low": 530.09,
+      "close": 562.23,
+      "vol_ratio_20d": 1.44
+    },
+    {
+      "date": "2026-10-16",
+      "open": 547.23,
+      "high": 550.96,
+      "low": 526.83,
+      "close": 528.75,
+      "vol_ratio_20d": 1.0
+    },
+    {
+      "date": "2026-10-19",
+      "open": 552.27,
+      "high": 554.41,
+      "low": 535.67,
+      "close": 538.05,
+      "vol_ratio_20d": 0.91
+    },
+    {
+      "date": "2026-10-20",
+      "open": 530.02,
+      "high": 548.11,
+      "low": 524.6,
+      "close": 534.74,
+      "vol_ratio_20d": 0.78
+    },
+    {
+      "date": "2026-10-21",
+      "open": 545.62,
+      "high": 556.79,
+      "low": 537.3,
+      "close": 552.72,
+      "vol_ratio_20d": 0.92
+    },
+    {
+      "date": "2026-10-22",
+      "open": 523.11,
+      "high": 529.98,
+      "low": 502.6,
+      "close": 507.93,
+      "vol_ratio_20d": 1.29
+    },
+    {
+      "date": "2026-10-23",
+      "open": 510.75,
+      "high": 523.92,
+      "low": 508.35,
+      "close": 516.79,
+      "vol_ratio_20d": 0.8
+    },
+    {
+      "date": "2026-10-26",
+      "open": 523.2,
+      "high": 533.5,
+      "low": 514.01,
+      "close": 531.28,
+      "vol_ratio_20d": 0.86
+    },
+    {
+      "date": "2026-10-27",
+      "open": 539.47,
+      "high": 563.92,
+      "low": 538.5,
+      "close": 560.26,
+      "vol_ratio_20d": 1.06
+    },
+    {
+      "date": "2026-10-28",
+      "open": 572.9,
+      "high": 579.18,
+      "low": 560.52,
+      "close": 578.44,
+      "vol_ratio_20d": 0.98
+    },
+    {
+      "date": "2026-10-29",
+      "open": 561.82,
+      "high": 575.1,
+      "low": 560.57,
+      "close": 566.42,
+      "vol_ratio_20d": 0.79
+    },
+    {
+      "date": "2026-10-30",
+      "open": 509.0,
+      "high": 520.4,
+      "low": 492.21,
+      "close": 504.8,
+      "vol_ratio_20d": 1.94
+    },
+    {
+      "date": "2026-11-02",
+      "open": 510.42,
+      "high": 512.82,
+      "low": 466.07,
+      "close": 466.84,
+      "vol_ratio_20d": 2.03
+    },
+    {
+      "date": "2026-11-03",
+      "open": 479.99,
+      "high": 497.4,
+      "low": 473.54,
+      "close": 483.9,
+      "vol_ratio_20d": 1.59
+    },
+    {
+      "date": "2026-11-04",
+      "open": 485.25,
+      "high": 514.61,
+      "low": 476.5,
+      "close": 488.78,
+      "vol_ratio_20d": 2.89
+    },
+    {
+      "date": "2026-11-05",
+      "open": 452.02,
+      "high": 456.05,
+      "low": 402.1,
+      "close": 404.4,
+      "vol_ratio_20d": 3.66
+    },
+    {
+      "date": "2026-11-06",
+      "open": 444.43,
+      "high": 459.8,
+      "low": 433.3,
+      "close": 449.04,
+      "vol_ratio_20d": 2.1
+    }
+  ],
+  "price_T": 612.57
+}

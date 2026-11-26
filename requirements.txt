@@ -27,10 +27,15 @@ PyYAML
 # --- Scheduling & Calendars ---
 pandas_market_calendars
 apscheduler
+pytz
 
 # --- Analysis & Agents ---
 statsmodels
 langgraph
 
-# --- Brokerage (Optional) ---
-# ibapi
+# --- 低频数据脑 (只读 equipoise / PG) ---
+psycopg2-binary>=2.9
+
+# --- Brokerage ---
+ib_insync
+ibapi  # PyPI 上是 9.81.1.post1（社区版），仅用基础类 EClient/EWrapper/Contract，够用

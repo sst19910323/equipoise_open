@@ -1,4 +1,4 @@
-> 🗄️ **Archived — v1 (file-based edition).** This is the original three-debater, on-disk (JSON/CSV) design. The current edition is **v2** — see [**README.md**](README.md). This snapshot is also frozen on the [`v1` branch](../../tree/v1). For a data-driven farewell to this edition, see the [**v1 send-off**](docs/v1-send-off.md).
+> 🗄️ **Archived — v1 (file-based edition).** This is the original three-debater, on-disk (JSON/CSV) design. For the current source release, see [**README.md**](README.md). Use these historical setup instructions with the [`v1` branch](https://github.com/sst19910323/equipoise_open/tree/v1), not the current main branch. For a data-driven farewell to this edition, see the [**v1 send-off**](docs/v1-send-off.md).
 
 ---
 

@@ -1,0 +1,8 @@
+# Language policy (2026-10-24/25). Single source for the two language names; everything else lives in code:
+#   - which report fields are translated / kept verbatim: datalayer/pg/i18n.py (TRANSLATABLE_FIELDS, POSTCHECK_TRANSLATABLE_FIELDS, KEEP_PATHS)
+#   - translation engines and cheap models: scripts/translate_reports.py (ENGINES: claude → haiku, codex → gpt-6-luna; --engine auto = by producing engine)
+#   - storage: debates.lang / debates.report_i18n and postcheck.lang / postcheck.report_i18n (one key per language; original never rewritten)
+#   - API default display language: env EQUIPOISE_DEFAULT_LANG (zh); ?lang= overrides; lang_served tells what was actually given
+core_lang: en     # the original language of new reports and verdicts from 2026-10-26T00:00Z (assembler stamps report.lang); older rows are zh and are left alone
+owner_lang: zh    # human-facing outputs for the owner (rebalance plans, operator summaries); machine artifacts stay in core_lang
+translate_to: [zh]   # the last step of every debate / postcheck: one translator subagent per language listed here (cheapest model) → data/i18n_staging/*.json → translate_reports.py --load

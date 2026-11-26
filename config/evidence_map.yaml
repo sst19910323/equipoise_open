@@ -1,0 +1,125 @@
+# =============================================================================
+# 证据地图 (议会 v2 · B4 同业横向) — 每标的: 同业组 / 禁用基准 / 相关经济指标
+# =============================================================================
+# peers: 本仓 canonical 代号(symbols.yaml 里存在的优先, prepare 会拉齐它们的日线)。
+#        不在库的纯外部对标(未上市/无订阅)不进 peers, 走 Scout 搜索腿定性对比。
+# banned_benchmarks: 该标的自己是其重仓股的 ETF → relative_strength 禁止当基准
+#        (循环引用: "NVDA vs SMH" ≈ 自己跟自己比)。
+# econ: 相关经济指标 key, 格式 <REGION>.<indicator>, 对应 data/economic 转运文件内容。
+# notes: 给证据官/仲裁者看的一句话提示。
+# 没登记的标的 = 无地图, evidence_quant 会如实返回"无证据地图条目", 不瞎配。
+
+# ── 半导体簇 ──
+NVDA:  {peers: [AMD, TSM, AVGO, MU], banned_benchmarks: [SMH, QQQ], econ: []}
+AMD:   {peers: [NVDA, INTC, AVGO], banned_benchmarks: [SMH], econ: []}
+AVGO:  {peers: [NVDA, AMD, TSM], banned_benchmarks: [SMH], econ: []}
+MU:    {peers: [HXSCL, SSNLF, TSM], banned_benchmarks: [SMH], econ: [US.cpi_yoy],
+        notes: "DRAM/HBM 现货价无 IBKR 源 → Scout 搜索腿"}
+TSM:   {peers: [ASML, NVDA, SSNLF], banned_benchmarks: [SMH], econ: []}
+INTC:  {peers: [AMD, TSM], banned_benchmarks: [SMH], econ: []}
+ASML:  {peers: [TSM, BESI, SHECY], banned_benchmarks: [SMH], econ: [EU.cpi_yoy]}
+BESI:  {peers: [ASML, SHECY], banned_benchmarks: [], econ: [EU.cpi_yoy]}
+SNPS:  {peers: [ADBE], banned_benchmarks: [], econ: [],
+        notes: "CDNS 未入库, EDA 对标走 Scout 搜索腿"}
+SSNLF: {peers: [HXSCL, MU], banned_benchmarks: [], econ: [KR.cpi_yoy]}
+HXSCL: {peers: [SSNLF, MU], banned_benchmarks: [], econ: [KR.cpi_yoy],
+        notes: "HBM 龙头供 NVIDIA, 与 MU 三星形成存储三角"}
+HANMISEMI: {peers: [HXSCL, BESI], banned_benchmarks: [], econ: [KR.cpi_yoy],
+        notes: "HBM 键合设备, 下游即 HXSCL"}
+SHECY: {peers: [ASML, HOCPY, AJINY], banned_benchmarks: [], econ: [JP.cpi_yoy]}
+HOCPY: {peers: [SHECY, AJINY, ASML], banned_benchmarks: [], econ: [JP.cpi_yoy]}
+AJINY: {peers: [SHECY, HOCPY], banned_benchmarks: [], econ: [JP.cpi_yoy]}
+
+# ── 防务簇 ──
+RHM:   {peers: [HAG, HANWHAAERO, MHVYF], banned_benchmarks: [], econ: [EU.cpi_yoy],
+        notes: "欧防务同日联动抛售非独立证据, 看簇内分化"}
+HAG:   {peers: [RHM, HANWHAAERO], banned_benchmarks: [], econ: [EU.cpi_yoy]}
+HANWHAAERO: {peers: [RHM, HAG, MHVYF], banned_benchmarks: [], econ: [KR.cpi_yoy]}
+MHVYF: {peers: [RHM, HANWHAAERO], banned_benchmarks: [], econ: [JP.cpi_yoy],
+        notes: "防务+重工双属性, 防务面比 RHM/韩华"}
+
+# ── 核电/公用双子 ──
+CEG:   {peers: [VST], banned_benchmarks: [XLU], econ: []}
+VST:   {peers: [CEG], banned_benchmarks: [XLU], econ: []}
+DOOSANENER: {peers: [CEG, VST], banned_benchmarks: [], econ: [KR.cpi_yoy],
+        notes: "核电/SMR, 美核电双子是估值锚"}
+
+# ── 其他有明确对标的 ──
+GOOGL: {peers: [META, MSFT, AMZN], banned_benchmarks: [QQQ], econ: []}
+META:  {peers: [GOOGL], banned_benchmarks: [QQQ], econ: []}
+MSFT:  {peers: [GOOGL, AMZN], banned_benchmarks: [QQQ], econ: []}
+AMZN:  {peers: [MSFT, GOOGL, WMT], banned_benchmarks: [QQQ], econ: []}
+WMT:   {peers: [AMZN], banned_benchmarks: [], econ: [US.cpi_yoy],
+        notes: "消费必需, CPI 传导直接"}
+AAPL:  {peers: [MSFT, GOOGL], banned_benchmarks: [QQQ], econ: []}
+ADBE:  {peers: [SNPS, MSFT], banned_benchmarks: [], econ: []}
+JPM:   {peers: [], banned_benchmarks: [XLF], econ: [US.fed_funds_rate],
+        notes: "行内对标(GS/BAC)未入库 → Scout 搜索腿; 利率敏感"}
+XOM:   {peers: [], banned_benchmarks: [XLE], econ: [],
+        notes: "油价才是真对标, 走 Scout 搜索腿查 WTI/Brent"}
+SFTBY: {peers: [NVDA, ITOCY], banned_benchmarks: [], econ: [JP.cpi_yoy],
+        notes: "持 Arm, AI 资产组合属性 > 日股属性"}
+ITOCY: {peers: [SFTBY], banned_benchmarks: [], econ: [JP.cpi_yoy],
+        notes: "综合商社, 巴菲特持仓五商社之一"}
+NTDOY: {peers: [], banned_benchmarks: [], econ: [JP.cpi_yoy],
+        notes: "游戏同业(索尼/微软游戏部门)未入库 → Scout 搜索腿"}
+
+# ── 2026-08-02 标的池扩充 ──
+SIE:   {peers: [], banned_benchmarks: [], econ: [EU.cpi_yoy],
+        notes: "ABB/Schneider/Honeywell/Emerson 未入库 → Scout 搜索腿"}
+DBK:   {peers: [JPM], banned_benchmarks: [], econ: [EU.cpi_yoy],
+        notes: "BNP/SocGen/UniCredit/Santander 未入库 → Scout 搜索腿"}
+ADS:   {peers: [], banned_benchmarks: [], econ: [EU.cpi_yoy],
+        notes: "Nike/Puma/Lululemon 未入库 → Scout 搜索腿"}
+MC:    {peers: [], banned_benchmarks: [], econ: [EU.cpi_yoy],
+        notes: "Hermes/Kering/Richemont 未入库 → Scout 搜索腿"}
+NOVO:  {peers: [LLY], banned_benchmarks: [], econ: [EU.cpi_yoy],
+        notes: "GLP-1 欧美双龙对标"}
+TM:    {peers: [HYMTF], banned_benchmarks: [], econ: [JP.cpi_yoy],
+        notes: "日韩汽车/汇率暴露对标"}
+MUFG:  {peers: [KB, JPM], banned_benchmarks: [], econ: [JP.cpi_yoy],
+        notes: "日韩美银行的利率敏感度对标"}
+HYMTF: {peers: [TM], banned_benchmarks: [], econ: [KR.cpi_yoy],
+        notes: "韩日汽车/汇率暴露对标"}
+KB:    {peers: [MUFG, JPM], banned_benchmarks: [], econ: [KR.cpi_yoy],
+        notes: "韩日美银行的利率敏感度对标"}
+LLY:   {peers: [NOVO], banned_benchmarks: [XLV], econ: [],
+        notes: "GLP-1 欧美双龙对标"}
+
+# ── 2026-08-12 新增: SpaceX (2026-06-12 上市, 只有约 2 个月日线) ──
+SPCX:  {peers: [PLTR, NVDA, TSLA], banned_benchmarks: [], econ: [US.fed_funds_rate],
+        notes: "真同业(卫星: ASTS/RKLB/IRDM/Viasat; AI 云: CRWV/ORCL)全未入库 → 走 Scout 搜索腿。
+                库内三个对标都只是侧面: PLTR=AI+防务叙事+同 sector(ITA)、NVDA=AI capex 链条
+                (Q2 capex 18.4B 中 15.8B 砸 AI 段)、TSLA=马斯克复合体/散户情绪 beta(非业务同业)。
+                板块标签 ITA 只解释约 1/8 收入(Space 962M/总 7814M), 且 SPCX 不是 ITA 成分, 故
+                ITA/QQQ 都不禁用, 但 relative_strength 结果别当同业分化读。
+                ⚠️ 上市 2 个月: peer_compare 20 日窗口能算, 60 日以上/MA50/MA200/周线全缺 → 缺失
+                不等于走坏; 供给面(锁定期解禁: 8/6 已放 911.5M 股, 8-10 月每 2-4 周 7% 分批,
+                Q3 财报再放约 28%, 剩余 12/8 到期, 马斯克 6.4B 股锁到 2027-06-12)是当前主驱动,
+                走搜索腿核实。"}
+
+# ── 2026-09-24 新增: 麦当劳 ──
+MCD:   {peers: [WMT], banned_benchmarks: [], econ: [US.cpi_yoy],
+        notes: "真同业(YUM/CMG/SBUX/QSR)全未入库 → 走 Scout 搜索腿; WMT 只是低收入消费者/价值战侧面对标。
+                sector 挂 XLP 是分组权宜(GICS 属可选消费/XLY), relative_strength vs XLP 别当同业分化读。
+                核心看点: 美国同店销售(客流 vs 客单价)、价值套餐/促销战、低收入客群健康度、GLP-1 对快餐需求。"}
+
+# ── ETF 横向组 (2026-07-21 补; SPY/QQQ/DIA/GENERAL* 大盘宽基无同业组, 故意不登记:
+#    它们的 peer_compare 请求会被如实拒绝并引导改 relative_strength/搜索腿) ──
+ITA:   {peers: [PPA, XAR], banned_benchmarks: [], econ: [],
+        notes: "三只国防航天 ETF 横向, 分化=选股/权重差异信号"}
+IGV:   {peers: [XLK, SMH], banned_benchmarks: [], econ: [],
+        notes: "软件 vs 大科技 vs 半导体, 科技内部轮动"}
+REMX:  {peers: [MP], banned_benchmarks: [], econ: [],
+        notes: "MP 是 REMX 重仓成分, 成分 vs 篮子分化看个股逻辑强弱"}
+GLD:   {peers: [GDX, SLV], banned_benchmarks: [], econ: [],
+        notes: "金矿股杠杆属性/金银比, 贵金属内部结构"}
+SMH:   {peers: [NVDA, AVGO, TSM, MU], banned_benchmarks: [], econ: [],
+        notes: "重仓成分 vs 篮子: 龙头强弱是否被 ETF 平均掉"}
+XLE:   {peers: [XOM], banned_benchmarks: [], econ: [],
+        notes: "油价才是真锚 → WTI/Brent 走 Scout 搜索腿"}
+XLF:   {peers: [JPM], banned_benchmarks: [], econ: [US.fed_funds_rate]}
+XLV:   {peers: [UNH], banned_benchmarks: [], econ: []}
+XLP:   {peers: [WMT], banned_benchmarks: [], econ: [US.cpi_yoy]}
+XLU:   {peers: [CEG, VST], banned_benchmarks: [], econ: [],
+        notes: "核电双子 vs 传统公用, AI 电力叙事分化"}

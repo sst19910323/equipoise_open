@@ -1,0 +1,256 @@
+{
+  "report": {
+    "operation_type": "MARKET_ENTRY",
+    "operation_target": "344.43",
+    "reference_prices": [
+      {
+        "as_of": "2026-10-15T14:43:00+00:00",
+        "price": 344.43,
+        "source": "data/technical/AAPL/AAPL_technical_20261015T144300Z.json",
+        "symbol": "AAPL",
+        "session": "regular",
+        "currency": "USD"
+      }
+    ],
+    "risk_management": {
+      "stop_loss": "328美元：连续两个常规盘收盘低于该价，停止新增、撤去本次新增并重评；该交易保护平台延续，距344.43约2.32ATR，位于330.70前低下约0.38ATR聚集带，采用双收盘减少噪音，触发后不拉远；跳空可穿透。",
+      "take_profit": "348.15美元先检验：触及只结清五日路径，不自动止盈或加仓；连续两常规收盘在其上且相对QQQ强势保持，重新评估拓展幅度。未设无依据的远端机械止盈。",
+      "review_triggers": [
+        "常规收盘低于337.29撤回短期路径；10月22日到期未触348.15同样失效，不自动顺延。",
+        "跌破330.70且下一交易日未收回，提前核对经营事实与剩余敞口；328双收盘触发本次新增退出。",
+        "10月29日检查月底测试；测试延期或限制增加即撤回对应有限催化并重估。",
+        "10月30日收盘前重审财报敞口；未形成允许跨事件的有效判断，则该收盘前撤去本次新增，原有持有部分另按其纪律。",
+        "11月2日披露及22:00 UTC电话会后核对同口径毛利、需求和下一季指引；净抵消或新增损伤双向清算。"
+      ],
+      "max_drawdown_tolerance": "本次新增到328约4.77%的计划线距离，非保证最大损失；跳空与双收盘触发可使实际损失更大。"
+    },
+    "next_review": {
+      "notes": "价位触发含义依risk_management收盘及次日未收回条件，不是盘中一触即交易。10月22日路径到期；10月29日测试检查；10月30日有效重审缺席则撤去新增；月底测试未提供即撤回溢价，不无限等待。11月2日财报披露与22:00 UTC电话会核验新信息；若延期暂停新增并重审。11月4日十四交易日估值期届满重新定价。",
+      "frequency_hint": "daily",
+      "recommend_after": "2026-10-22",
+      "structured_triggers": [
+        {
+          "type": "price_below",
+          "value": 337.29,
+          "symbol": "AAPL"
+        },
+        {
+          "type": "price_below",
+          "value": 330.7,
+          "symbol": "AAPL"
+        },
+        {
+          "type": "price_below",
+          "value": 328,
+          "symbol": "AAPL"
+        },
+        {
+          "type": "price_above",
+          "value": 348.15,
+          "symbol": "AAPL"
+        },
+        {
+          "date": "2026-10-22",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-10-29",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-10-30",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-11-02",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-11-04",
+          "type": "date_reached"
+        }
+      ]
+    },
+    "statement": "平台接受与经营韧性支持344.43美元轻度顺势新增，成本与事件尾部限制力度，未有效重审则财报前撤去本次新增。",
+    "mentality_basis": "十日MA20接受、近期低点抬升且未发现已核定核心经营损伤，支持有限顺势新增；前高尚未获接受、弱基准及毛利未知限制规模与期限。",
+    "market_data_timestamp_utc": "2026-10-15T14:43:00Z",
+    "data_files": {
+      "macro": {
+        "fear_greed_us": "data/fear_greed/fear_greed_latest_20261014T000000Z.json",
+        "news_general_us": "data/news/GENERAL/GENERAL_news_20261015T144324Z.json"
+      },
+      "config": "config/symbols.yaml",
+      "sector": {},
+      "symbol": {
+        "news": "data/news/AAPL/AAPL_news_20261015T144325Z.json",
+        "technical": "data/technical/AAPL/AAPL_technical_20261015T144300Z.json"
+      },
+      "benchmarks": {
+        "QQQ": "data/technical/QQQ/QQQ_technical_20261015T142600Z.json"
+      }
+    }
+  },
+  "bars": [
+    {
+      "date": "2026-10-16",
+      "open": 346.11,
+      "high": 347.82,
+      "low": 340.46,
+      "close": 343.46,
+      "vol_ratio_20d": 1.66
+    },
+    {
+      "date": "2026-10-19",
+      "open": 340.78,
+      "high": 346.0,
+      "low": 340.11,
+      "close": 342.94,
+      "vol_ratio_20d": 0.85
+    },
+    {
+      "date": "2026-10-20",
+      "open": 339.86,
+      "high": 343.06,
+      "low": 338.7,
+      "close": 339.5,
+      "vol_ratio_20d": 0.9
+    },
+    {
+      "date": "2026-10-21",
+      "open": 339.28,
+      "high": 345.25,
+      "low": 338.83,
+      "close": 343.99,
+      "vol_ratio_20d": 0.89
+    },
+    {
+      "date": "2026-10-22",
+      "open": 344.88,
+      "high": 348.36,
+      "low": 342.28,
+      "close": 348.22,
+      "vol_ratio_20d": 1.22
+    },
+    {
+      "date": "2026-10-23",
+      "open": 349.03,
+      "high": 351.73,
+      "low": 345.75,
+      "close": 347.73,
+      "vol_ratio_20d": 0.94
+    },
+    {
+      "date": "2026-10-26",
+      "open": 343.92,
+      "high": 347.09,
+      "low": 341.03,
+      "close": 343.91,
+      "vol_ratio_20d": 0.97
+    },
+    {
+      "date": "2026-10-27",
+      "open": 343.12,
+      "high": 347.78,
+      "low": 342.39,
+      "close": 347.1,
+      "vol_ratio_20d": 0.86
+    },
+    {
+      "date": "2026-10-28",
+      "open": 346.94,
+      "high": 347.2,
+      "low": 343.52,
+      "close": 343.83,
+      "vol_ratio_20d": 0.78
+    },
+    {
+      "date": "2026-10-29",
+      "open": 348.04,
+      "high": 351.43,
+      "low": 347.3,
+      "close": 348.91,
+      "vol_ratio_20d": 1.03
+    },
+    {
+      "date": "2026-10-30",
+      "open": 346.63,
+      "high": 349.19,
+      "low": 334.35,
+      "close": 344.63,
+      "vol_ratio_20d": 1.62
+    },
+    {
+      "date": "2026-11-02",
+      "open": 342.67,
+      "high": 343.8,
+      "low": 335.82,
+      "close": 338.32,
+      "vol_ratio_20d": 1.54
+    },
+    {
+      "date": "2026-11-03",
+      "open": 325.58,
+      "high": 334.5,
+      "low": 325.33,
+      "close": 331.9,
+      "vol_ratio_20d": 1.62
+    },
+    {
+      "date": "2026-11-04",
+      "open": 341.23,
+      "high": 354.5,
+      "low": 340.99,
+      "close": 349.51,
+      "vol_ratio_20d": 2.41
+    },
+    {
+      "date": "2026-11-05",
+      "open": 353.89,
+      "high": 355.38,
+      "low": 342.06,
+      "close": 344.17,
+      "vol_ratio_20d": 1.88
+    },
+    {
+      "date": "2026-11-06",
+      "open": 338.73,
+      "high": 345.79,
+      "low": 338.3,
+      "close": 342.37,
+      "vol_ratio_20d": 0.86
+    },
+    {
+      "date": "2026-11-09",
+      "open": 345.0,
+      "high": 352.33,
+      "low": 344.78,
+      "close": 350.69,
+      "vol_ratio_20d": 0.89
+    },
+    {
+      "date": "2026-11-10",
+      "open": 351.35,
+      "high": 353.87,
+      "low": 346.46,
+      "close": 348.51,
+      "vol_ratio_20d": 0.62
+    },
+    {
+      "date": "2026-11-11",
+      "open": 349.49,
+      "high": 355.91,
+      "low": 349.32,
+      "close": 355.63,
+      "vol_ratio_20d": 0.76
+    },
+    {
+      "date": "2026-11-12",
+      "open": 357.81,
+      "high": 359.37,
+      "low": 354.41,
+      "close": 354.88,
+      "vol_ratio_20d": 0.72
+    }
+  ],
+  "price_T": 344.43
+}

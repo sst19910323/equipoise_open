@@ -14,6 +14,7 @@ Horizon Sentinel - AI Parliament Scheduler (V9.0 - DAG-Driven Concurrent)
 import argparse
 import asyncio
 import logging
+import os
 import sys
 import time
 import json
@@ -36,7 +37,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # --- 导入组件 ---
 try:
     from analysis.technical_snapshot_builder import process_symbol_technical_analysis
-    from fetchers.interactive_stock_fetcher import MarketDataFetcher, MarketDataConfig, SymbolContract
+    from datalayer.fetchers.interactive_stock_fetcher import MarketDataFetcher, MarketDataConfig, SymbolContract
     from run_debate import DebateEngine
 except ImportError as e:
     print(f"CRITICAL ERROR: Failed to import required modules. {e}")
@@ -56,6 +57,9 @@ DATA_FRESHNESS_SECONDS = 3600     # 技术数据鲜度阈值(1小时)，超过�
 
 # 宏观基准ETF（GENERAL 三镜头分析所需，DIA 不在 etfs 列表所以必须显式拉）
 BENCHMARK_SYMBOLS = ["SPY", "QQQ", "DIA"]
+EU_BENCHMARK_SYMBOLS = ["DAX", "IAEX"]
+JP_BENCHMARK_SYMBOLS = ["N225"]
+KR_BENCHMARK_SYMBOLS = ["KODEX200"]  # 2026-09-28: K200 指数 HMDS 断供, 切 KODEX200 ETF
 
 def get_trading_calendar(exchange: str = 'NYSE') -> mcal.MarketCalendar:
     try:
@@ -141,35 +145,6 @@ class ContextAssembler:
         self.contracts = (symbols_config or {}).get('symbol_contracts', {})
         self.inheritance_enabled = inheritance_enabled
 
-    def _get_max_age(self, section: str) -> float:
-        cfg = self.full_cfg.get(section, {})
-        return float(cfg.get('max_file_age', 315360000))
-
-    def _find_latest(self, rel_dir: str, pattern: str, max_age_seconds: float) -> Optional[Path]:
-        if not rel_dir: return None
-        dir_path = self.root / rel_dir
-        if not dir_path.exists(): return None
-
-        files = list(dir_path.glob(pattern))
-        if not files: return None
-
-        latest_file = max(files, key=lambda f: f.stat().st_mtime)
-
-        file_age = time.time() - latest_file.stat().st_mtime
-        if file_age > max_age_seconds:
-            logging.warning(f"⚠️ [Data Expired] {latest_file.name} is {file_age/3600:.1f}h old. Ignoring.")
-            return None
-
-        return latest_file
-
-    def _read_file(self, path: Path) -> str:
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                return f.read()
-        except Exception as e:
-            logging.error(f"Read failed {path}: {e}")
-            return "{}"
-
     def _get_path_str(self, path: Path) -> str:
         if not path: return None
         try:
@@ -177,49 +152,96 @@ class ContextAssembler:
         except:
             return str(path).replace("\\", "/")
 
-    def _build_benchmark_data(self, symbols: List[str]) -> Tuple[str, Dict[str, str]]:
+    def _tech_text_for(self, symbol: str, as_of=None) -> Tuple[Optional[str], Optional[str]]:
+        """技术快照文本 + 路径串, 统一读 PG technical 表 (不再读 JSON 文件)。
+        as_of=None → 最新一份; 给时刻 → 截至该刻最新。返回 (text_or_None, path_str_or_None)。"""
+        clean = symbol.upper().replace(" ", ".")
+        from datalayer.pg.lowfreq_reader import get_technical_snapshot
+        snap = get_technical_snapshot(clean, as_of)
+        if not snap or not snap.get("payload"):
+            return (None, None)
+        return (json.dumps(snap["payload"], ensure_ascii=False, default=str),
+                f"pg:technical@{snap.get('as_of')}")
+
+    def _news_text_for(self, symbol: str, as_of=None) -> Tuple[Optional[str], Optional[str]]:
+        """新闻文本 + 路径串, 统一读 PG news 表 (不再读 JSON 文件)。
+        as_of=None → 最新一批; 给时刻 → 截至该刻最新。返回 (text_or_None, path_str_or_None)。"""
+        clean = symbol.upper().replace(" ", ".")
+        from datalayer.pg.lowfreq_reader import get_news_snapshot
+        snap = get_news_snapshot(clean, as_of)
+        if not snap or not snap.get("items"):
+            return (None, None)
+        return (json.dumps(snap["items"], ensure_ascii=False, default=str),
+                f"pg:news@{snap.get('fetched_at')}")
+
+    def _build_benchmark_data(self, symbols: List[str], as_of=None) -> Tuple[str, Dict[str, str]]:
         """拼接给定 symbols 的技术分析文本为单个 benchmark_data 字符串。
         symbols 由调用方决定 (GENERAL=三镜头, 个股/板块=自己的主基准, 宽基=其他宽基横向对比)。
+        as_of 给定时走 PG 历史快照 (经 _tech_text_for)。
         """
-        max_age = self._get_max_age('technical_analysis')
-        ta_dir = self.full_cfg.get('technical_analysis', {}).get('output_dir')
-
         sections: List[str] = []
         used_paths: Dict[str, str] = {}
 
         for sym in symbols:
-            p = self._find_latest(f"{ta_dir}/{sym}", f"{sym}_technical_*.json", max_age)
-            if not p:
+            content, path = self._tech_text_for(sym, as_of)
+            if content is None:
                 continue
-            content = self._read_file(p)
             sections.append(f"#### {sym} 技术分析\n{content}")
-            used_paths[sym] = self._get_path_str(p)
+            if path:
+                used_paths[sym] = path
 
         return "\n\n".join(sections), used_paths
 
-    def _load_sector_layer(self, sector_symbol: str) -> Tuple[str, str, Dict[str, str]]:
+    def _load_sector_layer(self, sector_symbol: str, as_of=None) -> Tuple[str, str, Dict[str, str]]:
         """加载板块 ETF 的技术分析 + 新闻。返回 (tech_json, news_json, paths)。
-        缺失部分用空字符串占位，dedup 阶段会处理。"""
+        缺失部分用空字符串占位，dedup 阶段会处理。as_of 给定时走 PG 历史快照。"""
         paths: Dict[str, str] = {}
-        ta_max_age = self._get_max_age('technical_analysis')
-        ta_dir = self.full_cfg.get('technical_analysis', {}).get('output_dir')
-        p_tech = self._find_latest(f"{ta_dir}/{sector_symbol}", f"{sector_symbol}_technical_*.json", ta_max_age)
-        tech_json = ""
-        if p_tech:
-            tech_json = self._read_file(p_tech)
-            paths["technical"] = self._get_path_str(p_tech)
+        tech_json, tech_path = self._tech_text_for(sector_symbol, as_of)
+        tech_json = tech_json or ""
+        if tech_path:
+            paths["technical"] = tech_path
 
-        news_max_age = self._get_max_age('news')
-        news_dir = self.full_cfg.get('news', {}).get('cache_dir', 'data/news')
-        p_news = self._find_latest(f"{news_dir}/{sector_symbol}", f"{sector_symbol}_news_*.json", news_max_age)
-        news_json = ""
-        if p_news:
-            news_json = self._read_file(p_news)
-            paths["news"] = self._get_path_str(p_news)
+        news_json, news_path = self._news_text_for(sector_symbol, as_of)
+        news_json = news_json or ""
+        if news_path:
+            paths["news"] = news_path
 
         return tech_json, news_json, paths
 
-    def _load_inheritance(self, symbol: str) -> Tuple[str, Optional[str]]:
+    def _render_general_evidence(self, as_of=None) -> str:
+        """取最新 fresh 的 GENERAL 报告里的证据官产出(读 PG debates), 只渲染简单结论(task+simple)。
+        供任何非 GENERAL 标的辩论继承; detailed 太长不下传。无 fresh / 无证据 → ''。
+        历史回放(as_of 给定)时不下传证据(evidence 无 point-in-time 回放) → ''。"""
+        if as_of is not None:
+            return ""
+        from datalayer.pg.lowfreq_reader import get_debate_latest
+        ai_cfg = self.full_cfg.get('ai_analysis', {})
+        max_age = float(ai_cfg.get('inheritance_max_age', 3600))
+        row = get_debate_latest("GENERAL")
+        if not row:
+            return ""
+        last = _to_dt(row.get("as_of"))
+        if last is None or (datetime.now(timezone.utc) - last).total_seconds() > max_age:
+            return ""   # 没有够新的 GENERAL 报告 → 不下传证据
+        gj = row.get("report") or {}
+        evidence = gj.get('evidence', []) or []
+        lines = []
+        for it in evidence:
+            task   = (it.get('task') or '').strip()
+            simple = (it.get('simple') or '').strip()
+            if task and simple:
+                lines.append(f"- {task}：{simple}")
+            elif simple:
+                lines.append(f"- {simple}")
+        if not lines:
+            return ""
+        return (
+            "## 大盘证据官查证结论（继承自 GENERAL，仅结论）\n"
+            "以下是大盘辩论中证据官外部搜索得到的关键结论（精简），作为背景参考，非 ground truth：\n"
+            + "\n".join(lines)
+        )
+
+    def _load_inheritance(self, symbol: str, as_of=None) -> Tuple[str, Optional[str]]:
         """读取上层报告的辩论过程，渲染成"前层语境"段落字符串。
 
         路由规则 (按 symbols.yaml 的 sector 字段)：
@@ -229,6 +251,7 @@ class ContextAssembler:
 
         鲜度阈值：data_sources.yaml 的 ai_analysis.inheritance_max_age (默认 1h)。
         过期或缺失 → 返回 ("", None)，不阻塞分析。
+        as_of 给定(历史回放) → 父报告改从 PG get_debate_latest(parent, as_of) 取(截至该刻最新)。
 
         Returns:
             (rendered_text, parent_file_path_str)
@@ -237,6 +260,10 @@ class ContextAssembler:
             return "", None
         if symbol == "GENERAL":
             return "", None
+
+        # 大盘证据官结论: 任何非 GENERAL 标的都直接继承 GENERAL 的证据(仅简单结论)。
+        # 个股多经板块 ETF 路由, 而板块 ETF v1 不自搜, 故不走 parent 链, 直接取 GENERAL。
+        gen_ev = self._render_general_evidence(as_of)
 
         info = self.contracts.get(symbol, {})
         sector = info.get('sector')
@@ -247,29 +274,31 @@ class ContextAssembler:
             parent_symbol = "GENERAL"
             layer_name = "大盘"
 
-        ai_cfg = self.full_cfg.get('ai_analysis', {})
-        max_age = float(ai_cfg.get('inheritance_max_age', 3600))
-        out_dir = ai_cfg.get('output_dir', 'data/debate')
-
-        p = self._find_latest(
-            f"{out_dir}/{parent_symbol}",
-            f"{parent_symbol}_Analysis_*.json",
-            max_age
-        )
-        if not p:
-            logging.info(f"  [{symbol}] No fresh parent ({parent_symbol}) report ≤{max_age:.0f}s; skip inheritance.")
-            return "", None
-
+        # 父报告统一从 PG debates 取 (report jsonb 含 debate_history)。
+        # live(as_of=None): 取最新, 并要求够新(market_data_timestamp 在 inheritance_max_age 内);
+        # 历史回放(as_of 给定): 取截至该刻最新, 不卡鲜度(point-in-time)。
+        from datalayer.pg.lowfreq_reader import get_debate_latest
         try:
-            with open(p, 'r', encoding='utf-8') as f:
-                parent_json = json.load(f)
+            row = get_debate_latest(parent_symbol, as_of)
         except Exception as e:
-            logging.warning(f"  [{symbol}] Failed to read parent {p.name}: {e}")
-            return "", None
+            logging.warning(f"  [{symbol}] PG 取父({parent_symbol})报告异常: {e}")
+            row = {}
+        parent_json = (row or {}).get('report') or {}
+        if not parent_json:
+            logging.info(f"  [{symbol}] No PG parent ({parent_symbol}) report; skip inheritance.")
+            return gen_ev, None
+        if as_of is None:
+            ai_cfg = self.full_cfg.get('ai_analysis', {})
+            max_age = float(ai_cfg.get('inheritance_max_age', 3600))
+            last = _to_dt(row.get('as_of'))
+            if last is None or (datetime.now(timezone.utc) - last).total_seconds() > max_age:
+                logging.info(f"  [{symbol}] Parent ({parent_symbol}) report not fresh (≤{max_age:.0f}s); skip inheritance.")
+                return gen_ev, None
+        parent_path_str = f"pg:debates@{(row or {}).get('as_of')}"
 
         polished_history = parent_json.get('debate_history', []) or []
         if not polished_history:
-            return "", None
+            return gen_ev, None
 
         # 渲染辩论过程：用 polished_text，跳过原始 XML
         parts: List[str] = []
@@ -284,7 +313,7 @@ class ContextAssembler:
                 parts.append(f"[{role}] {rd}: {text}")
 
         if not parts:
-            return "", None
+            return gen_ev, None
 
         history_text = "\n\n".join(parts)
         rendered = (
@@ -294,39 +323,57 @@ class ContextAssembler:
             f"但本层目标是 {symbol}，证据冲突时以本层为准。\n\n"
             f"{history_text}"
         )
-        return rendered, self._get_path_str(p)
+        if gen_ev:
+            rendered = f"{rendered}\n\n{gen_ev}"
+        return rendered, parent_path_str
 
-    def _load_macro_layer(self, raw: Dict, paths: Dict) -> None:
-        """加载第 1 层宏观数据：general 新闻 + 经济指标 + 情绪指数。原地修改 raw / paths。"""
-        max_age = self._get_max_age('news')
-        news_dir = self.full_cfg.get('news', {}).get('cache_dir', 'data/news')
-        p = self._find_latest(f"{news_dir}/GENERAL", "GENERAL_news_*.json", max_age)
-        if p:
-            raw["general_news_data"] = self._read_file(p)
-            paths["macro"]["general_news"] = self._get_path_str(p)
+    def _load_macro_layer(self, raw: Dict, paths: Dict, region: str = "US", as_of=None, news_symbol: str = "GENERAL") -> None:
+        """加载第 1 层宏观数据：general 新闻 + 经济指标 + 情绪指数。原地修改 raw / paths。
 
-        max_age = self._get_max_age('economic_indicators')
-        econ_dir = self.full_cfg.get('economic_indicators', {}).get('cache_dir')
-        p = self._find_latest(econ_dir, "economic_indicators_*.json", max_age)
-        if p:
-            raw["macro_data"] = self._read_file(p)
-            paths["macro"]["economic"] = self._get_path_str(p)
+        经济指标只读隔壁 apex_codex 的低频数据脑 (PG, 库 equipoise)，
+        不再回退 JSON；PG 无数据时 macro_data 留空 (由调用方 setdefault 兜底)。
+        as_of 给定(历史回放)时各源按时刻 point-in-time 读。
+        """
+        news_text, news_path = self._news_text_for(news_symbol, as_of)
+        if news_text is not None:
+            raw["general_news_data"] = news_text
+            if news_path:
+                paths["macro"]["general_news"] = news_path
 
-        max_age = self._get_max_age('fear_greed')
-        fg_dir = self.full_cfg.get('fear_greed', {}).get('cache_dir')
-        p = self._find_latest(fg_dir, "fear_greed_latest_*.json", max_age)
-        if p:
-            raw["fear_greed_data"] = self._read_file(p)
-            paths["macro"]["fear_greed"] = self._get_path_str(p)
+        # 经济指标：只读 PG 数据脑 (equipoise)，不再回退 JSON
+        try:
+            from datalayer.pg.lowfreq_reader import format_economic_for_prompt
+            econ_from_brain = format_economic_for_prompt(region, as_of=as_of)
+        except Exception as e:
+            logging.warning(f"[macro] PG 数据脑读取异常: {e}")
+            econ_from_brain = None
 
-    def assemble_general(self) -> Tuple[Dict, Dict]:
-        """GENERAL 宏观三镜头分析：SPY/QQQ/DIA 并列。顶层无继承。"""
+        if econ_from_brain:
+            raw["macro_data"] = econ_from_brain
+            # economic 不再记进 data_files。复现时拿报告统一时间戳 market_data_timestamp_utc
+            # 调 /api/economic?region=&as_of=<时间戳> 即可重现, 不存路径/文件名。
+        else:
+            logging.warning(f"[macro] PG economic({region}) 无数据，macro_data 留空")
+
+        # 市场情绪: 读 PG 数据脑 sentiment 表 (US=fear_greed / EZ=vstoxx / JP=nikkei_vi)。
+        # 不再读 JSON、不再记 data_files 路径; 复现用报告统一时间戳 as_of 调 /api/sentiment。
+        try:
+            from datalayer.pg.lowfreq_reader import format_sentiment_for_prompt
+            sent_data = format_sentiment_for_prompt(region, as_of=as_of)   # as_of=None → 当前最新(实时辩论)
+        except Exception as e:
+            logging.warning(f"[sentiment] PG 数据脑读取异常: {e}")
+            sent_data = None
+        if sent_data:
+            raw["fear_greed_data"] = sent_data
+
+    def assemble_general(self, as_of=None) -> Tuple[Dict, Dict]:
+        """GENERAL 宏观三镜头分析：SPY/QQQ/DIA 并列。顶层无继承。as_of 给定→历史回放。"""
         raw = {}
         paths = {"macro": {}, "benchmarks": {}, "symbol": {}}
 
-        self._load_macro_layer(raw, paths)
+        self._load_macro_layer(raw, paths, as_of=as_of)
 
-        bench_text, bench_paths = self._build_benchmark_data(BENCHMARK_SYMBOLS)
+        bench_text, bench_paths = self._build_benchmark_data(BENCHMARK_SYMBOLS, as_of=as_of)
         raw["benchmark_data"] = bench_text
         paths["benchmarks"] = bench_paths
 
@@ -342,13 +389,35 @@ class ContextAssembler:
 
         return raw, paths
 
-    def assemble_stock(self, symbol: str) -> Tuple[Dict, Dict]:
+    def assemble_general_region(self, region: str, benchmarks: list, news_symbol: str, as_of=None) -> Tuple[Dict, Dict]:
+        """GENERAL_EU / GENERAL_JP 区域宏观分析。region 决定经济/情绪数据源，benchmarks 为区域指数列表。"""
+        raw = {}
+        paths = {"macro": {}, "benchmarks": {}, "symbol": {}}
+
+        # 经济指标 region 映射 (EU → EZ, JP → JP)
+        econ_region = {"EU": "EZ"}.get(region, region)
+        self._load_macro_layer(raw, paths, region=econ_region, as_of=as_of, news_symbol=news_symbol)
+
+        bench_text, bench_paths = self._build_benchmark_data(benchmarks, as_of=as_of)
+        raw["benchmark_data"] = bench_text
+        paths["benchmarks"] = bench_paths
+
+        raw["news_data"] = raw.pop("general_news_data", "[]")
+        raw["inheritance_block"] = ""
+
+        for k in ("macro_data", "fear_greed_data"):
+            raw.setdefault(k, "{}")
+
+        return raw, paths
+
+    def assemble_stock(self, symbol: str, as_of=None) -> Tuple[Dict, Dict]:
         """ETF 与个股共用的三层 (或两层) 装配。
 
         按 symbols.yaml 的 benchmark / sector 字段动态决定：
           第 1 层 (宏观)：general 新闻 + 经济 + 情绪 + 主基准 ETF 技术 (1~2 个)
           第 2 层 (板块)：sector ETF 的技术 + 新闻 (无 sector 则空段)
           第 3 层 (自身)：profile + 技术 + 基本面 + 新闻
+        as_of 给定(历史回放)时, 技术/新闻/经济/情绪/基本面/父语境全按时刻 point-in-time 读 PG。
         """
         raw: Dict = {}
         paths: Dict = {"macro": {}, "benchmarks": {}, "sector": {}, "symbol": {}}
@@ -356,10 +425,11 @@ class ContextAssembler:
         clean_sym = symbol.upper().replace(" ", ".")
         raw["symbol"] = clean_sym
 
-        # === 第 1 层 / 宏观背景 ===
-        self._load_macro_layer(raw, paths)
-
         info = self.contracts.get(clean_sym, {})
+
+        # === 第 1 层 / 宏观背景 (按标的 region 取对应区宏观) ===
+        region = (info.get('region') or "US").upper()
+        self._load_macro_layer(raw, paths, region=region, as_of=as_of)
         benchmark = info.get('benchmark')
         sector = info.get('sector')
 
@@ -371,14 +441,14 @@ class ContextAssembler:
             bench_symbols = [s for s in BENCHMARK_SYMBOLS if s != clean_sym]
             raw["benchmark_symbol"] = " / ".join(bench_symbols) if bench_symbols else "N/A"
 
-        bench_text, bench_paths = self._build_benchmark_data(bench_symbols)
+        bench_text, bench_paths = self._build_benchmark_data(bench_symbols, as_of=as_of)
         raw["benchmark_data"] = bench_text
         paths["benchmarks"] = bench_paths
 
         # === 第 2 层 / 板块 ===
         sector_news_json = ""
         if sector:
-            sector_tech, sector_news_json, sector_paths = self._load_sector_layer(sector)
+            sector_tech, sector_news_json, sector_paths = self._load_sector_layer(sector, as_of=as_of)
             paths["sector"] = sector_paths
             raw["sector_symbol"] = sector
             raw["sector_tech_data"] = sector_tech if sector_tech else "(无板块技术数据)"
@@ -388,53 +458,35 @@ class ContextAssembler:
             raw["sector_tech_data"] = ""
 
         # === 第 3 层 / 分析对象自身 ===
-        max_age = self._get_max_age('technical_analysis')
-        ta_dir = self.full_cfg.get('technical_analysis', {}).get('output_dir')
-        p = self._find_latest(f"{ta_dir}/{clean_sym}", f"{clean_sym}_technical_*.json", max_age)
-        if p:
-            raw["tech_data"] = self._read_file(p)
-            paths["symbol"]["technical"] = self._get_path_str(p)
+        tech_text, tech_path = self._tech_text_for(clean_sym, as_of)
+        if tech_text is not None:
+            raw["tech_data"] = tech_text
+            if tech_path:
+                paths["symbol"]["technical"] = tech_path
 
-        max_age = self._get_max_age('alpha_fundamentals')
-        fund_dir = self.full_cfg.get('alpha_fundamentals', {}).get('cache_dir')
-        if fund_dir:
-            p = self._find_latest(f"{fund_dir}/{clean_sym}", f"{clean_sym}_fundamentals_*.json", max_age)
-            if p:
-                content = self._read_file(p)
-                raw["fundamentals_data"] = content
-                paths["symbol"]["fundamentals"] = self._get_path_str(p)
-                try:
-                    js = json.loads(content)
-                    # 旧 schema (legacy 嵌套): General/CompanyProfile/profile 子键
-                    for k in ["General", "CompanyProfile", "profile"]:
-                        if k in js:
-                            raw["profile_data"] = json.dumps(js[k], ensure_ascii=False)
-                            break
-                    # 新 schema (扁平 + {SYMBOL}_ 前缀): 挑公司概况相关字段拼回 profile
-                    if "profile_data" not in raw:
-                        prefix = f"{clean_sym}_"
-                        profile_fields = (
-                            "name", "description", "sector", "industry", "country",
-                            "currency", "market_cap", "shares_outstanding", "beta",
-                            "fifty_two_week_high", "fifty_two_week_low",
-                        )
-                        profile_dict = {
-                            (prefix + f): js[prefix + f]
-                            for f in profile_fields if (prefix + f) in js
-                        }
-                        if profile_dict:
-                            raw["profile_data"] = json.dumps(profile_dict, ensure_ascii=False)
-                except: pass
+        # 公司基本面: 读 PG 数据脑 (company 静态 + fundamentals 可变 point-in-time)。
+        # 不再读 JSON 文件、不再记 data_files 路径; 复现用报告统一时间戳 market_data_timestamp_utc
+        # 调 /api/fundamentals?symbol=&as_of= 重查即可。
+        try:
+            from datalayer.pg.lowfreq_reader import format_company_for_prompt, format_fundamentals_for_prompt
+            prof = format_company_for_prompt(clean_sym)
+            fund = format_fundamentals_for_prompt(clean_sym, as_of=as_of)   # as_of=None → 当前最新(实时辩论)
+        except Exception as e:
+            logging.warning(f"[fundamentals] PG 数据脑读取异常: {e}")
+            prof = fund = None
+        if prof:
+            raw["profile_data"] = prof
+        if fund:
+            raw["fundamentals_data"] = fund
 
         if "profile_data" not in raw: raw["profile_data"] = "{}"
         if "fundamentals_data" not in raw: raw["fundamentals_data"] = "{}"
 
-        max_age = self._get_max_age('news')
-        news_dir = self.full_cfg.get('news', {}).get('cache_dir')
-        p = self._find_latest(f"{news_dir}/{clean_sym}", f"{clean_sym}_news_*.json", max_age)
-        if p:
-            raw["news_data"] = self._read_file(p)
-            paths["symbol"]["news"] = self._get_path_str(p)
+        news_text, news_path = self._news_text_for(clean_sym, as_of)
+        if news_text is not None:
+            raw["news_data"] = news_text
+            if news_path:
+                paths["symbol"]["news"] = news_path
 
         # === 跨层新闻去重 (Finnhub id) + 合并为单一 news_data ===
         # 优先级 个股 > 板块 > 宏观；同 id 高优先级层保留
@@ -464,7 +516,7 @@ class ContextAssembler:
             raw["sector_block"] = ""  # 整段消失，不留空标题
 
         # === 加载前层语境（GENERAL 不继承；其它按 yaml parent 路由） ===
-        inh_text, parent_path = self._load_inheritance(clean_sym)
+        inh_text, parent_path = self._load_inheritance(clean_sym, as_of=as_of)
         raw["inheritance_block"] = inh_text  # 空字符串则模板里整块消失
         if parent_path:
             paths["parent_analysis_file"] = parent_path
@@ -493,68 +545,131 @@ def _extract_ts_from_path(path_str: str) -> str:
     except Exception:
         return ""
 
-def _check_analysis_exists(symbol: str, data_ts: str, data_config: Dict) -> bool:
-    """检查是否已存在基于该数据版本的分析报告"""
-    if not data_ts: return False
-    
-    base_out_dir = data_config.get('data_sources', {}).get('ai_analysis', {}).get('output_dir', 'data/debate')
-    # [修复] 搜索子目录 output_dir/SYMBOL/
-    symbol_dir = Path(PROJECT_ROOT) / base_out_dir / symbol.upper()
-    
-    if not symbol_dir.exists(): return False
-    
-    sym_pattern = f"{symbol}_Analysis_*.json"
-    files = list(symbol_dir.glob(sym_pattern))
-    if not files: return False
-    
-    latest_analysis = max(files, key=lambda f: f.name)
-    latest_analysis_ts = _extract_ts_from_path(latest_analysis.name)
-    
-    return latest_analysis_ts >= data_ts
+# GENERAL* 取数据时间锚用的"固定指数 ETF"(不再 max 多个 benchmark)
+_GENERAL_TS_ANCHOR = {"GENERAL": "SPY", "GENERAL_EU": "DAX", "GENERAL_JP": "N225", "GENERAL_KR": "KODEX200"}
+
+
+def _to_dt(v):
+    """各种时间表示 → aware UTC datetime; 失败 → None。"""
+    if v is None:
+        return None
+    if isinstance(v, datetime):
+        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    s = str(v).strip()
+    for fmt in ("%Y%m%dT%H%M%SZ", "%Y%m%dT%H%M%S%z"):
+        try:
+            dt = datetime.strptime(s, fmt)
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            pass
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+def _pg_data_ts(symbol: str, ctx_type: str, as_of=None):
+    """数据时间锚 = PG technical 的 as_of(=market_data_timestamp_utc)。
+    GENERAL* 取固定指数 ETF 的; 个股/ETF 取自己的。返回 aware datetime 或 None。"""
+    from datalayer.pg.lowfreq_reader import get_technical_snapshot
+    anchor = _GENERAL_TS_ANCHOR.get(symbol, symbol) if ctx_type == 'general' else symbol
+    snap = get_technical_snapshot(anchor.upper().replace(" ", "."), as_of)
+    return _to_dt(snap.get("as_of")) if snap else None
+
+
+def _check_analysis_exists(symbol: str, data_ts, data_config: Dict, as_of=None) -> bool:
+    """是否已存在 >= 该数据版本(data_ts)的辩论报告 —— 读 PG debates 表(不再 glob JSON)。
+    debates.as_of = market_data_timestamp_utc; 已有报告的 as_of >= data_ts 即视为已分析过。"""
+    data_ts = _to_dt(data_ts)
+    if data_ts is None:
+        return False
+    from datalayer.pg.lowfreq_reader import get_debate_latest
+    row = get_debate_latest(symbol.upper(), as_of)
+    last = _to_dt((row or {}).get("as_of"))
+    return last is not None and last >= data_ts
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # LLM辩论任务
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run_debate_sync(engine, assembler, symbol: str, ctx_type: str, data_config: Dict):
+def run_debate_sync(engine, assembler, symbol: str, ctx_type: str, data_config: Dict,
+                    force: bool = False, as_of=None):
     """
     同步执行单个标的的辩论任务。
     包含数据组装、完整性检查、去重检查、引擎调用。
+
+    force=True (重跑): 绕过"报告已存"去重, 强制重新辩论。
+        注意: **不**绕过"无行情就 skip"安全闸 —— 没价格仍不辩 (免 AI 幻觉价位)。
+    as_of 给定 (历史回放): 装配按时刻 point-in-time 读 PG; 不回写 schedule (回放不改未来排期)。
     """
     # 1. 组装数据
     if symbol == "GENERAL":
-        raw_data, paths = assembler.assemble_general()
+        raw_data, paths = assembler.assemble_general(as_of=as_of)
+    elif symbol == "GENERAL_EU":
+        raw_data, paths = assembler.assemble_general_region("EU", EU_BENCHMARK_SYMBOLS, "GENERAL_EU", as_of=as_of)
+    elif symbol == "GENERAL_JP":
+        raw_data, paths = assembler.assemble_general_region("JP", JP_BENCHMARK_SYMBOLS, "GENERAL_JP", as_of=as_of)
+    elif symbol == "GENERAL_KR":
+        raw_data, paths = assembler.assemble_general_region("KR", KR_BENCHMARK_SYMBOLS, "GENERAL_KR", as_of=as_of)
     else:
-        raw_data, paths = assembler.assemble_stock(symbol)
-    
-    # 2. 完整性检查
-    if symbol != "GENERAL" and "tech_data" not in raw_data:
-        logging.warning(f"⚠️ [Skip Debate] {symbol}: Tech Data missing or expired.")
-        return
-    
-    # 3. 提取数据时间戳
-    data_ts = ""
-    if ctx_type == 'general':
-        benchmarks = paths.get("benchmarks", {})
-        ts_list = []
-        for sym in BENCHMARK_SYMBOLS:
-            ts = _extract_ts_from_path(benchmarks.get(sym))
-            if ts: ts_list.append(ts)
-        if ts_list: data_ts = max(ts_list)
+        raw_data, paths = assembler.assemble_stock(symbol, as_of=as_of)
+
+    # 2. 完整性检查 - 看 value 真有内容, 不只看 key 是否存在
+    # 背景: assemble_stock L451-453 有个 setdefault 兜底, 会把 tech_data 默认填成 "{}"
+    # (为了模板渲染不 KeyError)。旧版只检查 "tech_data" not in raw_data → 永远 False,
+    # technical 文件过期时 sanity check 失效, AI 在没价格数据情况下硬辩论, 幻觉 target 价位
+    # (案例: META 6/9 technical 25h 老 被剔除, AI 给 target=660, 真实 last_price=589.85)。
+    if not symbol.startswith("GENERAL"):
+        tech_val = (raw_data.get("tech_data") or "").strip()
+        if not tech_val or tech_val in ("{}", "[]"):
+            logging.warning(
+                f"⚠️ [Skip Debate] {symbol}: Tech Data missing or expired "
+                f"(tech_data 兜底为空, 不辩论免 AI 幻觉价格)"
+            )
+            return "skipped-no-market-data"
     else:
-        tech_path = paths.get("symbol", {}).get("technical")
-        data_ts = _extract_ts_from_path(tech_path)
-    
-    # 4. 去重检查
-    if data_ts and _check_analysis_exists(symbol, data_ts, data_config):
+        # GENERAL*: benchmark technical 至少有一个不能为空
+        bench_val = (raw_data.get("benchmark_data") or "").strip()
+        if not bench_val:
+            logging.warning(
+                f"⚠️ [Skip Debate] {symbol}: benchmark technical 全部过期或缺失 "
+                f"(benchmark_data 为空, 不辩论免 AI 幻觉价位)"
+            )
+            return "skipped-no-market-data"
+
+    # 3. 提取数据时间锚 = PG technical 的 as_of(=market_data_timestamp_utc)
+    #    GENERAL* 取固定指数 ETF(SPY/DAX/N225), 个股/ETF 取自己。
+    data_ts = _pg_data_ts(symbol, ctx_type, as_of)
+
+    # 4. 去重检查 (读 PG debates; force=True 重跑时跳过, 强制重辩)
+    if force and data_ts and _check_analysis_exists(symbol, data_ts, data_config, as_of):
+        logging.info(f"♻️ [Force Rerun] {symbol}: Fresh analysis exists ({data_ts}), but --force → 重辩")
+    elif data_ts and _check_analysis_exists(symbol, data_ts, data_config, as_of):
         logging.info(f"⏭️ [Skip Debate] {symbol}: Fresh analysis exists ({data_ts})")
-        return
-    
+        return "skipped-fresh-exists"
+
     # 5. 执行辩论
-    logging.info(f"🚀 [Debate Start] {symbol} ({ctx_type}) | DataTS: {data_ts}")
-    engine.run(symbol, ctx_type, raw_data, paths, 10)
+    logging.info(f"🚀 [Debate Start] {symbol} ({ctx_type}) | DataTS: {data_ts} | as_of={as_of}")
+    final_state = engine.run(symbol, ctx_type, raw_data, paths, 10)
     logging.info(f"✅ [Debate Done] {symbol}")
+
+    # 6. live 跑完回写 schedule 的 next (历史回放 as_of 不回写)。best-effort。
+    if as_of is None and final_state:
+        try:
+            from workflows.schedule_writeback import write_next
+            fr = final_state.get("final_report") or {}
+            # next_review 可能在 final_report 顶层, 或再嵌一层 final_report
+            nr = fr.get("next_review") or (fr.get("final_report") or {}).get("next_review")
+            if nr:
+                sched_path = PROJECT_ROOT / "config" / "debate_schedule.yaml"
+                write_next(symbol, nr, sched_path)
+            else:
+                logging.info(f"[run_debate_sync] {symbol} 无 next_review, 不回写 schedule")
+        except Exception as e:
+            logging.warning(f"[run_debate_sync] schedule 回写异常(忽略): {e}")
+    return "ran"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -586,13 +701,13 @@ def build_dependency_graph(symbols_config: Dict, target_names: List[str]) -> Dic
 
 
 def is_symbol_data_fresh(symbol: str, ta_dir: str, max_age: float) -> bool:
-    """检查某 symbol 的技术分析数据是否在鲜度阈值内。"""
-    if not ta_dir:
+    """某 symbol 的行情数据是否在鲜度阈值内 —— 看保留的原始 bar CSV mtime
+    (data/market_data/{symbol}/*.csv = 最近一次从 IBKR 拉 bar 的时刻)。
+    技术快照已迁 PG、不再落 JSON, 故鲜度改看 CSV; 入参 ta_dir 保留但不再使用。"""
+    csv_dir = PROJECT_ROOT / "data" / "market_data" / symbol
+    if not csv_dir.exists():
         return False
-    dir_path = PROJECT_ROOT / ta_dir / symbol
-    if not dir_path.exists():
-        return False
-    files = list(dir_path.glob(f"{symbol}_technical_*.json"))
+    files = list(csv_dir.glob(f"{symbol}_*.csv"))
     if not files:
         return False
     latest = max(files, key=lambda f: f.stat().st_mtime)
@@ -642,23 +757,34 @@ class IbkrFetcher:
                 pass
             self._fetcher = None
 
-        try:
-            md_config = MarketDataConfig.from_yaml(str(PROJECT_ROOT / "config/data_sources.yaml"))
-            self._fetcher = MarketDataFetcher(md_config)
-            ok = self._fetcher.connect_and_start(
-                host="127.0.0.1", port=7496,
-                client_id=random.randint(1000, 9999)
-            )
-            if ok and self._fetcher.isConnected():
-                self._connected = True
-                logging.info("🔌 [IbkrFetcher] (Re)connected.")
-                return True
-            else:
+        md_config = MarketDataConfig.from_yaml(str(PROJECT_ROOT / "config/data_sources.yaml"))
+        # 端口可被 EQUIPOISE_IBKR_PORT 覆盖 (默认 7496=TWS Live; 服务器跑 IB Gateway 时设 4001)
+        ibkr_host = os.environ.get("EQUIPOISE_IBKR_HOST", "127.0.0.1")
+        ibkr_port = int(os.environ.get("EQUIPOISE_IBKR_PORT", "7496"))
+        for attempt in range(1, 4):
+            try:
+                self._fetcher = MarketDataFetcher(md_config)
+                logging.info(f"🔌 [IbkrFetcher] connecting {ibkr_host}:{ibkr_port} (attempt {attempt}/3)")
+                ok = self._fetcher.connect_and_start(
+                    host=ibkr_host, port=ibkr_port,
+                    client_id=random.randint(1000, 9999)
+                )
+                if ok and self._fetcher.isConnected():
+                    self._connected = True
+                    logging.info("🔌 [IbkrFetcher] (Re)connected.")
+                    return True
                 logging.warning("⚠️ [IbkrFetcher] Connect failed - IBKR offline?")
-                return False
-        except Exception as e:
-            logging.warning(f"⚠️ [IbkrFetcher] Connection error: {e}")
-            return False
+            except Exception as e:
+                logging.warning(f"⚠️ [IbkrFetcher] Connection error: {e}")
+            try:
+                if self._fetcher is not None:
+                    self._fetcher.disconnect_and_stop()
+            except Exception:
+                pass
+            self._fetcher = None
+            if attempt < 3:
+                time.sleep(2.0)
+        return False
 
     def _latest_csv_bar_ts(self, symbol: str) -> Optional[str]:
         """Layer 2 helper: 读 data/market_data/{symbol}/ 下最新 1m CSV 的 filename 编码 bar 时间戳。
@@ -702,7 +828,8 @@ class IbkrFetcher:
             symbol=c_info['symbol'],
             sec_type=c_info['sec_type'],
             exchange=c_info['exchange'],
-            currency=c_info['currency']
+            currency=c_info['currency'],
+            ibkr_ticker=c_info.get('ibkr_ticker'),   # 数字东证/KRX 代码; 美欧股缺省=None → 回退 symbol
         )
         try:
             self._fetcher.fetch_multi_resolutions(contract, force_refresh=True)
@@ -727,11 +854,12 @@ class IbkrFetcher:
             return False
         return True
 
-    async def fetch_symbol(self, symbol: str) -> bool:
+    async def fetch_symbol(self, symbol: str, force_refresh: bool = False) -> bool:
         """串行请求 + 强制 1s 间隔。锁内复检鲜度，避免并发重复拉同一 symbol。"""
         async with self._lock:
             # 锁内复检：可能在排队等锁期间，前面的协程已经把这个 symbol 拉好了
-            if is_symbol_data_fresh(symbol, self.ta_dir, self.max_age):
+            if (not force_refresh and
+                    is_symbol_data_fresh(symbol, self.ta_dir, self.max_age)):
                 logging.info(f"  ⏭️ [Fetch Skip] {symbol}: data fresh (already fetched).")
                 return True
 

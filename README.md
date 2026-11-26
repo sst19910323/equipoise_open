@@ -12,11 +12,19 @@ Equipoise is an LLM-based framework for quantitative market research. Its judgin
 
 ## How to run
 
-**Setup guide: in preparation.** The current rules, formulas, models, and code are still being prepared for publication. This README describes the current system and its drill plan; the screenshots come from a running private instance. They are not a demonstration of what a fresh clone of this repository can run today.
+**Current source published; initialization guide still in preparation.** The main project's research code, rules, formulas and model manuals were synchronized on **November 26, 2026**. The source is here to read and work with now. Database setup, Hermes integration and agent-account initialization will be organized next; a fresh clone is not yet a configured deployment. The screenshots come from a running private instance.
 
-The available reference implementation is **v1**: see its [setup instructions](README-v1.md) and [frozen code](https://github.com/sst19910323/equipoise_open/tree/v1). It implements an earlier architecture.
+Start with the [source map](docs/ARCHITECTURE.md) and [release scope and prerequisites](docs/source-snapshot.md). Agents enter through [AGENTS.md](AGENTS.md) or the shared [CLAUDE.md](CLAUDE.md). The dashboard backend is included; the frontend is maintained separately. The earlier **v1** implementation remains in its [frozen branch](https://github.com/sst19910323/equipoise_open/tree/v1), with [archived setup instructions](README-v1.md).
 
-The planned entry point is to let **Codex or Claude Code initialize the project**, with guidance for database setup, Hermes (monitoring and agent wake-ups), and worker instances. Those instructions are still being assembled. It has become complicated enough that even getting it organized, initialized, and synchronized is a job for an agent.
+The planned setup experience is to let **Codex or Claude Code initialize the project**, with guidance for database setup, Hermes (monitoring and agent wake-ups), and worker instances. The source and existing operator protocols are published first; the initialization helper comes later. It has become complicated enough that even getting it organized, initialized, and synchronized is a job for an agent.
+
+| Explore | Source |
+| --- | --- |
+| Rules, roles and model manuals | [Shared research corpus](prompts/agent/principles.md) |
+| Debate, tasks and evidence | [Protocol](orchestration/run-protocol.md) · [Session machinery](scripts/run_step.py) |
+| Data and PostgreSQL archive | [Data layer](datalayer/) |
+| BP / historical drills | [Drill tools](scripts/drill/) · [Drill prompts](prompts/drill/) |
+| Monitoring and worker coordination | [Hermes guide](HERMES.md) · [Duty protocol](orchestration/duty.md) |
 
 [Data](#the-data-foundation) · [Debate, tasks & evidence](#the-hearing-debate-tasks-and-evidence) · [Pricing & plans](#from-events-to-prices-and-plans) · [BP / drills](#drill-plan)
 
@@ -204,11 +212,19 @@ Equipoise 是一个基于大语言模型的量化市场研究框架。参与判�
 
 ## 怎么运行
 
-**初始化说明先留个位置，还在整理。** 当前的规则、公式、模型与代码正在准备公开。本文介绍现有系统与演习计划，截图来自正在运行的私有实例，并不代表现在克隆这个仓库就能复现它们。
+**现行源码已公开，初始化说明继续整理。** 主工程的研究代码、规则、公式与模型手册已于 **2026 年 11 月 26 日**同步到这里，可以先阅读和修改。数据库、Hermes 与 agent 账号的初始化后续再整理；克隆源码还不等于配好了运行环境。截图来自正在运行的私有实例。
 
-目前可参考的实现是 **v1**：见 [运行说明](README-v1.md) 和 [冻结代码](https://github.com/sst19910323/equipoise_open/tree/v1)，它采用的是早期架构。
+先看[源码地图](docs/ARCHITECTURE.md)和[本次公开范围与运行前提](docs/source-snapshot.md)。Agent 从 [AGENTS.md](AGENTS.md) 或共用的 [CLAUDE.md](CLAUDE.md) 进入。看板后端已包含，前端仍由独立工程维护。早期 **v1** 留在[冻结分支](https://github.com/sst19910323/equipoise_open/tree/v1)，配合[旧版运行说明](README-v1.md)阅读。
 
-计划中的入口是直接让 **Codex 或 Claude Code 初始化工程**，把数据库、负责监测与唤起的 Hermes 和各个工作实例的配置指引串起来。这部分说明还在整理。项目已经复杂到，连整理、初始化、同步本身，都得请 agent 帮忙了。
+计划中的初始化方式是直接让 **Codex 或 Claude Code 整理运行环境**，把数据库、负责监测与唤起的 Hermes 和各个工作实例的配置指引串起来。这次先公开源码与已有操作协议，初始化辅助之后再做。项目已经复杂到，连整理、初始化、同步本身，都得请 agent 帮忙了。
+
+| 想看什么 | 源码入口 |
+| --- | --- |
+| 规则、角色与公式模型 | [共用研究语料](prompts/agent/principles.md) |
+| 辩论、任务与证据 | [编排协议](orchestration/run-protocol.md) · [会话步骤](scripts/run_step.py) |
+| 数据与 PostgreSQL 归档 | [数据层](datalayer/) |
+| BP／历史演习 | [演习工具](scripts/drill/) · [演习提示词](prompts/drill/) |
+| 监测与工作实例协调 | [Hermes 说明](HERMES.md) · [值班协议](orchestration/duty.md) |
 
 [数据底座](#数据底座) · [辩论任务与证据](#听证辩论任务与证据) · [事件到定价](#从事件到定价再到操作) · [BP／演习](#drill-plan-zh)
 

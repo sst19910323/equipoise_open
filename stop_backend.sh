@@ -1,14 +1,25 @@
 #!/bin/bash
-# Stop ONLY the FastAPI backend (apex_quant_entry).
+# Stop ONLY the FastAPI backend (equipoise_entry).
 # 不会动 data_scheduler / horizon_sentinel; 老版 ./stop.sh 仍保留管那些.
 
-cd /opt/apex_quant
+cd /opt/equipoise
 
-JOB="apex_quant_entry"
+JOB="equipoise_entry"
 PID_FILE="pids/$JOB.pid"
 TERM_WAIT_SEC=5
+UNIT="equipoise-backend.service"
 
 echo ">>> Stopping $JOB (backend only) ..."
+
+if command -v systemctl >/dev/null 2>&1 && systemctl list-units --all "$UNIT" --no-legend | grep -q "$UNIT"; then
+    if systemctl is-active --quiet "$UNIT"; then
+        systemctl stop "$UNIT"
+        echo "🛑 $UNIT stopped"
+    else
+        systemctl reset-failed "$UNIT" >/dev/null 2>&1 || true
+    fi
+    rm -f "$PID_FILE"
+fi
 
 kill_pid() {
     local pid="$1"
@@ -49,12 +60,14 @@ else
 fi
 
 # Step 2: pkill 兜底, 抓 PID 文件没记录到的孤儿进程
-ORPHAN_PIDS=$(pgrep -f "${JOB}\.py" || true)
-if [[ -n "$ORPHAN_PIDS" ]]; then
-    echo "⚠️  Found orphan process(es): $ORPHAN_PIDS, force-killing"
-    for opid in $ORPHAN_PIDS; do
-        kill_pid "$opid" "$JOB (orphan)"
-    done
-fi
+# 2026-10-23: 只杀真正跑后端的 venv python, 不杀命令行里恰好带 equipoise_entry 字样的别的进程
+# (迁移那天 pgrep -f 把正在跑本脚本的 Fable 会话 shell 一起杀了, 后端停了没起来)
+for opid in $(pgrep -f "${JOB}\.py" || true); do
+    [[ "$opid" == "$$" || "$opid" == "$PPID" ]] && continue
+    exe=$(readlink -f "/proc/$opid/exe" 2>/dev/null || true)
+    [[ "$exe" == /opt/equipoise/venv/bin/python* ]] || continue
+    echo "⚠️  Found orphan backend process $opid ($exe), stopping"
+    kill_pid "$opid" "$JOB (orphan)"
+done
 
 echo ">>> Done."

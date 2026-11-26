@@ -1,0 +1,11 @@
+# P11 · Historical analogue check
+
+File only when a specific claim uses relative leadership or weakness to change the remaining expected return after a price move. Use the current US instrument or a named US GENERAL lens distinct from SPY. Example filing:
+
+    {"type":"model_call","model":"P11","issue":"R2","params":{"symbol":"DIA","condition":"relative_strength_5d","claim":"Underperformance adds downside after the existing extension."}}
+
+Read the deterministic receipt attached to the Runner job. The parent groups the instrument's 20-session return in units of trailing volatility. The child splits that group by five-session return relative to SPY. Three- and fifteen-session close returns are fitted separately, with shrinkage estimated across this instrument's comparable groups using only labels mature before each quarterly fit. Positive and negative increments use the same calculation. All prices are from prior completed daily bars. The reported validation loss difference compares the shrunk model with the parent across the instrument's eligible states during the preceding four quarters; lower is better. It is a historical diagnostic, not validation of an individual trade or significance for today's subgroup.
+
+Return the standard Runner item. Use `Attached machine receipt` in `payload_text`; the archive inserts the original calculation automatically. For each horizon give the weight and incremental return in percentage points when available, the matched dates and block count, and the validation result. Distinguish `no_incremental_support` (the split earned zero weight or failed to improve validation loss), `insufficient_support`, and `no_validation`. None supports either direction. For `lower_historical_loss` describe the sign, uncertainty and historical scope; the debater is responsible for any application to the current claim. Evidence already priced in the parent counts once. The result implies no execution action.
+
+An unsupported condition, instrument, or missing data returns `not_found` with the supplied reason. If the deterministic receipt itself is absent, use the executor failure shape. Do not reconstruct the calculation from later bars, choose another benchmark, or substitute a qualitative search.

@@ -1,0 +1,143 @@
+# ============================================
+# Data Sources Configuration
+# ============================================
+
+data_sources:
+  # Fear & Greed Index
+  fear_greed:
+    cache_dir: data/fear_greed
+    cooldown: 86400
+    max_file_age: 86400  # LLM only searches files within 1 day
+
+  # ============================================
+  # 低频数据脑 (PostgreSQL, 单库 equipoise; 隔壁 apex_codex 写, 本工程只读)
+  # 契约表 economic(region, indicator, value, consensus, unit, release_time)
+  #       region ∈ {US, EZ, UK, JP, KR}
+  # 连接可被环境变量覆盖: EQUIPOISE_PG_HOST/PORT/DB/USER/PASSWORD/ECON_TABLE
+  # PG 不可达/库表缺失 → lowfreq_reader 优雅回退到下面的 economic_indicators JSON
+  # ============================================
+  lowfreq_pg:
+    host: localhost
+    port: 5432
+    dbname: equipoise
+    user: postgres
+    password: postgres
+    economic_table: economic
+
+  # Economic Indicators (旧 Alpha Vantage JSON — 数据脑不可用时的回退源)
+  economic_indicators:
+    cache_dir: data/economic
+    cooldown: 86400  # 24 hours
+    max_file_age: 86400  # LLM only searches files within 1 day
+    indicators:
+      - federal_funds_rate
+      - cpi
+      - unemployment
+      - real_gdp
+      - treasury_10y
+      - treasury_2y
+
+  # ETF Profile Data
+  etf_profile:
+    cache_dir: data/profile
+    cooldown: 604800  # 7 days
+    max_file_age: 1209600  # LLM searches files within 14 days (fundamental data changes slowly)
+    fields:
+      - top_holdings
+      - sector_weights
+      - total_assets
+      - expense_ratio
+      - avg_volume
+      - inception_date
+      - tracking_index
+
+  # 锚点 bar 允许滞后(分钟) —— 备餐时效闸用(prepare_debate_data): 开市中锚点比 now 旧超过
+  # 此值 = 盈透半死/延迟超标, STALE-ANCHOR 挡下。当前 US 历史分钟线实测约 15min 延迟,
+  # 给 20min 裕量；EU/JP/KR 是 15min 延迟源给 30。
+  market_data_freshness:
+    US: 20
+    EU: 30
+    JP: 30
+    KR: 30
+
+  # Finnhub News (2026-07-02 新规: 20条/3天, 与欧日 agent/Linkup 腿统一口径)
+  news:
+    api_key1: "YOUR_FINNHUB_KEY"
+    api_key2: "YOUR_FINNHUB_KEY"
+    cache_dir: data/news
+    cooldown: 10800
+    max_file_age: 86400
+    news_limit: 20
+    days_back: 3
+
+  # Finnhub Fundamentals
+  fundamentals:
+    api_key: "YOUR_FINNHUB_KEY"
+    cache_dir: data/fundamentals
+    cooldown: 86400
+    max_file_age: 172800  # LLM searches files within 2 days
+
+  alpha_fundamentals:
+    cache_dir: data/fundamentals
+    cooldown: 86400
+    max_file_age: 172800  # LLM searches files within 2 days
+
+  # ============================================
+  # IBKR Market Data
+  # ============================================
+  market_data:
+    cache_dir: data/market_data
+    cooldown: 3000
+    max_file_age: 3600
+    schedules:
+      - label: "2d_1m"
+        duration: "2 D"
+        bar_size: "1 min"
+        filename_duration: "2d"
+        filename_resolution: "1m"
+      - label: "7d_5m"
+        duration: "7 D"
+        bar_size: "5 mins"
+        filename_duration: "7d"
+        filename_resolution: "5m"
+      - label: "2m_1h"
+        duration: "2 M"
+        bar_size: "1 hour"
+        filename_duration: "2m"
+        filename_resolution: "1h"
+        use_rth: 1          # V16: regular session only (bars aligned to the open); omitted → same default by label
+      - label: "5y_1d"
+        duration: "5 Y"
+        bar_size: "1 day"
+        filename_duration: "5y"
+        filename_resolution: "1d"
+        use_rth: 1          # V16: official regular-session daily bars (no extended-hours highs/lows)
+
+  # Technical Analysis
+  technical_analysis:
+    output_dir: data/technical
+    max_file_age: 86400
+
+  # Options Fundamentals Data
+  options_fundamentals:
+    cache_dir: data/options/fundamentals
+    cooldowns:
+      latest: 604800  # One week
+    max_file_age: 1209600  # LLM searches files within 14 days
+
+  # AI Debate Results
+  ai_analysis:
+    output_dir: data/debate
+    max_file_age: 604800            # LLM searches analysis results within 7 days (API展示用)
+    inheritance_max_age: 3600       # 父层报告鲜度阈值，超过则不继承 (跨层记忆传递专用，1h)
+
+  # ============================================
+  # 证据官 Scout (grounding 搜索)
+  # 辩论中三方各提 search_request → Scout 一次 grounding 查证 → 现喂下一轮 + 存 PG evidence 表。
+  # 穷, 所以预算上限: 一场辩论最多激活 max_rounds 次(空请求的轮不计)。默认关。
+  # ============================================
+  evidence_search:
+    enabled: true               # 总开关(唯一开关); 开就全标的搜、关就全关, --search/--no-search 或 EQUIPOISE_EVIDENCE_SEARCH 覆盖
+    max_rounds: 3               # 预算: 一场辩论最多激活 3 次搜索 (触发搜索的轮才计数)
+    provider: "linkup"          # 证据官搜源: linkup(默认, deepseek归纳task+linkup搜+deepseek写概述) | gemini(老grounding, 封存待启)
+    model: "gemini-3.5-flash"   # gemini 模式用的 grounding 模型 (provider=gemini 时才用)

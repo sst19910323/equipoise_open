@@ -1,0 +1,606 @@
+{
+  "report": {
+    "operation_type": "MARKET_ENTRY",
+    "operation_target": "215.35",
+    "operation_execution": {
+      "stop": {
+        "level": 205.5,
+        "semantics": "close"
+      },
+      "basis": "ITA: 215.35 vs reference 215.35 (0.00%)",
+      "derived": "MARKET_ENTRY",
+      "declared": "ENTRY",
+      "reference": "opening_snapshot",
+      "tolerance_pct": 0.01
+    },
+    "reference_prices": [
+      {
+        "as_of": "2026-11-02T15:26:00+00:00",
+        "price": 215.35,
+        "source": "data/technical/ITA/ITA_technical_20261102T152600Z.json",
+        "symbol": "ITA",
+        "session": "regular",
+        "currency": "USD"
+      }
+    ],
+    "risk_management": {
+      "stop_loss": "For the incremental entry sleeve, one completed daily close below 205.5 triggers exit at the next regular-session open; no widening or fundamental override. All levels use the November 2 pre-split equivalent scale.",
+      "take_profit": "No standing take-profit order: a close above 217.76 or 226 triggers reassessment of realization and continuation. The three-session path target is a review level, not an automatic sale.",
+      "review_triggers": [
+        "Daily close below 208.69 invalidates the immediate upside path; below 205.5 exits the incremental sleeve next open.",
+        "A close at or below 209 invokes review of the dip alternative, not an additional standing buy.",
+        "A close above 217.76 or 226 prompts continuation/realization review; no automatic trim or buy-back under this entry decision.",
+        "Review after three sessions, including failure to close above 215.76; do not automatically add further exposure."
+      ],
+      "max_drawdown_tolerance": "The 205.5 close stop defines the trigger, not a guaranteed loss bound; next-open gap losses and stop-out before recovery are explicitly priced."
+    },
+    "next_review": {
+      "notes": "Maintain the derived immediate entry and its incremental-sleeve stop while the three-session path is tested. In the failure state, a close below 208.69 triggers immediate distribution review; below 205.5 exits that sleeve next open. In the acceptance state, closes above 215.76/217.76 and subsequently 226 prompt a fresh comparison, without a standing additional buy or trim. If neither state develops by the November 5 close, review the position and keep the existing stop rather than extending the thesis automatically. The 209 dip and 217.76 strength-trim contracts remain unselected comparison alternatives, not concurrent orders. Z.EV1 reports two-for-one adjusted trading from November 5: divide every quoted level and trigger by two then and double share quantities, preserving economics. AXON November 5 and TDG November 10 are future information dates from R.EV2, not assumed positive results. The three-session review is separate from the fifteen-session valuation horizon.",
+      "frequency_hint": "daily",
+      "recommend_after": "2026-11-05T21:15:00Z",
+      "structured_triggers": [
+        {
+          "type": "price_below",
+          "value": 205.5,
+          "symbol": "ITA"
+        },
+        {
+          "type": "price_below",
+          "value": 208.69,
+          "symbol": "ITA"
+        },
+        {
+          "type": "price_below",
+          "value": 209,
+          "symbol": "ITA"
+        },
+        {
+          "type": "price_above",
+          "value": 215.76,
+          "symbol": "ITA"
+        },
+        {
+          "type": "price_above",
+          "value": 217.76,
+          "symbol": "ITA"
+        },
+        {
+          "type": "price_above",
+          "value": 226,
+          "symbol": "ITA"
+        },
+        {
+          "date": "2026-11-03",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-11-05",
+          "type": "date_reached"
+        },
+        {
+          "date": "2026-11-10",
+          "type": "date_reached"
+        }
+      ]
+    },
+    "statement": "Participate in earnings-led aerospace repair with close-based risk control, while retaining the material possibility that election relief fades or a recovery follows a stop-out.",
+    "mentality_basis": "Verified dominant-constituent improvement in Z.EV1/R.EV1 supports repair within the low-fit, damaged intermediate structure identified in Z.MC2/R.MC3; Z3 failure tails and Z4 whipsaw restrain incremental exposure. OBJ1.R/OBJ2.R remove an unsupported asymmetry between the residual distributions; the operation follows their recalculated common comparison.",
+    "market_data_timestamp_utc": "2026-11-02T15:26:00Z",
+    "data_files": {
+      "macro": {
+        "fear_greed_us": "data/fear_greed/fear_greed_latest_20261030T000000Z.json",
+        "news_general_us": "data/news/GENERAL/GENERAL_news_20261102T152707Z.json"
+      },
+      "config": "config/symbols.yaml",
+      "sector": {},
+      "symbol": {
+        "news": "data/news/ITA/ITA_news_20261102T152708Z.json",
+        "technical": "data/technical/ITA/ITA_technical_20261102T152600Z.json"
+      },
+      "benchmarks": {
+        "SPY": "data/technical/SPY/SPY_technical_20261102T152500Z.json"
+      }
+    },
+    "odds": {
+      "cost": {
+        "k": 10,
+        "base_bps": {
+          "EU": 4,
+          "JP": 4,
+          "KR": 5,
+          "US": 2
+        },
+        "fx_to_usd": {
+          "EUR": 1.08,
+          "GBP": 1.27,
+          "JPY": 0.0066,
+          "KRW": 0.00072,
+          "USD": 1.0
+        },
+        "volume_lot": {
+          "EU": 1,
+          "JP": 1,
+          "KR": 1,
+          "US": 100
+        },
+        "adr_surcharge_bps": 3
+      },
+      "gamma": 6.25,
+      "T_days": 15,
+      "schema": "3.4",
+      "z_flag": 3.0,
+      "baseline": {
+        "probs": [
+          0.25,
+          0.5,
+          0.25
+        ],
+        "zero_scale": "skip",
+        "nodes_sigma": [
+          -1.0,
+          0.0,
+          1.0
+        ]
+      },
+      "cost_bps": 3.9566,
+      "sigma_ref": 0.08,
+      "size_enum": {
+        "heavy": "AGGRESSIVE_SIZE",
+        "light": "PILOT_SIZE",
+        "standard": "STANDARD_SIZE"
+      },
+      "provenance": {
+        "commit": "e11739bc7332a772c62628ebd8724becd52c609b",
+        "source": "deploy_file"
+      },
+      "unit_basis": {
+        "adr": false,
+        "s_s": 0.082998,
+        "venue": "US",
+        "adv_usd_m": 119.9598,
+        "adv_source": "data/market_data/ITA/ITA_5y_1d_20261102T000000Z.csv",
+        "atr_pct_14": 2.143,
+        "volume_lot": 100.0,
+        "reference_size": "cost assumes the reference order size; see proposal §3.7",
+        "volume_lot_basis": "IBKR US stock bars report volume in 100-share lots (AAPL CSV: 304,982 vs 158,671 trades)"
+      },
+      "p_tolerance": 0.01,
+      "tie_threshold": 0.0005,
+      "reference_price": 215.35,
+      "T_days_overrides": {},
+      "coverage_nominal": 0.8,
+      "gamma_sensitivity": [
+        5,
+        20
+      ],
+      "size_display_bounds": [
+        37.5,
+        75
+      ]
+    }
+  },
+  "bars": [
+    {
+      "date": "2026-11-03",
+      "open": 71.6233,
+      "high": 72.9167,
+      "low": 71.59,
+      "close": 72.0567,
+      "vol_ratio_20d": 1.1
+    },
+    {
+      "date": "2026-11-04",
+      "open": 71.81,
+      "high": 72.4367,
+      "low": 69.8933,
+      "close": 70.9467,
+      "vol_ratio_20d": 1.34
+    },
+    {
+      "date": "2026-11-05",
+      "open": 70.43,
+      "high": 71.3,
+      "low": 67.56,
+      "close": 68.11,
+      "vol_ratio_20d": 1.22
+    }
+  ],
+  "price_T": 215.35,
+  "snapshot": {
+    "ITA_price_digest_daily": [
+      [
+        "2026-10-19..2026-10-19",
+        208.46,
+        209.38,
+        206.73,
+        207.75,
+        1.24,
+        1
+      ],
+      [
+        "2026-10-20..2026-10-20",
+        206.89,
+        209.54,
+        204.58,
+        206.15,
+        1.43,
+        1
+      ],
+      [
+        "2026-10-21..2026-10-21",
+        207.07,
+        209.31,
+        204.05,
+        205.79,
+        1.39,
+        1
+      ],
+      [
+        "2026-10-22..2026-10-22",
+        204.51,
+        206.53,
+        201.79,
+        204.48,
+        1.2,
+        1
+      ],
+      [
+        "2026-10-23..2026-10-23",
+        201.6,
+        203.12,
+        197.36,
+        202.23,
+        1.2,
+        1
+      ],
+      [
+        "2026-10-26..2026-10-26",
+        202.94,
+        207.18,
+        202.94,
+        207.16,
+        1.33,
+        1
+      ],
+      [
+        "2026-10-27..2026-10-27",
+        207.12,
+        207.78,
+        204.86,
+        206.22,
+        1.31,
+        1
+      ],
+      [
+        "2026-10-28..2026-10-28",
+        206.05,
+        208.51,
+        205.0,
+        207.74,
+        0.98,
+        1
+      ],
+      [
+        "2026-10-29..2026-10-29",
+        209.13,
+        215.76,
+        209.13,
+        214.3,
+        1.55,
+        1
+      ],
+      [
+        "2026-10-30..2026-10-30",
+        214.0,
+        215.6,
+        208.69,
+        209.74,
+        1.66,
+        1
+      ]
+    ],
+    "ITA_price_digest_schema": "[ITA] cols: period(first..last trading day),open,high,low,close,vol_rel(row mean daily vol ÷ 2y mean daily vol),trading_days"
+  },
+  "current_daily": [
+    {
+      "date": "2026-10-05 00:00:00+00:00",
+      "open": 69.1633,
+      "high": 69.3667,
+      "low": 68.5433,
+      "close": 68.9933,
+      "volume": 14632,
+      "barCount": 2533,
+      "wap": 69.061
+    },
+    {
+      "date": "2026-10-06 00:00:00+00:00",
+      "open": 69.0467,
+      "high": 69.63,
+      "low": 68.5967,
+      "close": 69.42,
+      "volume": 12685,
+      "barCount": 2035,
+      "wap": 69.28433333
+    },
+    {
+      "date": "2026-10-07 00:00:00+00:00",
+      "open": 68.83,
+      "high": 68.83,
+      "low": 67.7067,
+      "close": 67.8667,
+      "volume": 17454,
+      "barCount": 3139,
+      "wap": 68.097
+    },
+    {
+      "date": "2026-10-08 00:00:00+00:00",
+      "open": 67.46,
+      "high": 68.3867,
+      "low": 67.0,
+      "close": 68.2933,
+      "volume": 23155,
+      "barCount": 3456,
+      "wap": 68.03033333
+    },
+    {
+      "date": "2026-10-09 00:00:00+00:00",
+      "open": 68.48,
+      "high": 68.9567,
+      "low": 67.9667,
+      "close": 68.8833,
+      "volume": 8755,
+      "barCount": 1599,
+      "wap": 68.72966667
+    },
+    {
+      "date": "2026-10-12 00:00:00+00:00",
+      "open": 68.9333,
+      "high": 69.1967,
+      "low": 68.6067,
+      "close": 68.6767,
+      "volume": 9213,
+      "barCount": 2168,
+      "wap": 68.86133333
+    },
+    {
+      "date": "2026-10-13 00:00:00+00:00",
+      "open": 68.5267,
+      "high": 68.5567,
+      "low": 67.4767,
+      "close": 68.0,
+      "volume": 14733,
+      "barCount": 2905,
+      "wap": 67.95866667
+    },
+    {
+      "date": "2026-10-14 00:00:00+00:00",
+      "open": 67.7467,
+      "high": 68.5167,
+      "low": 67.6833,
+      "close": 68.08,
+      "volume": 14041,
+      "barCount": 2629,
+      "wap": 68.12433333
+    },
+    {
+      "date": "2026-10-15 00:00:00+00:00",
+      "open": 68.25,
+      "high": 69.01,
+      "low": 67.3933,
+      "close": 68.9733,
+      "volume": 14708,
+      "barCount": 2211,
+      "wap": 68.37433333
+    },
+    {
+      "date": "2026-10-16 00:00:00+00:00",
+      "open": 69.4233,
+      "high": 70.4433,
+      "low": 69.2767,
+      "close": 69.69,
+      "volume": 34355,
+      "barCount": 5773,
+      "wap": 69.79366667
+    },
+    {
+      "date": "2026-10-19 00:00:00+00:00",
+      "open": 69.4867,
+      "high": 69.7933,
+      "low": 68.91,
+      "close": 69.25,
+      "volume": 18286,
+      "barCount": 3634,
+      "wap": 69.372
+    },
+    {
+      "date": "2026-10-20 00:00:00+00:00",
+      "open": 68.9633,
+      "high": 69.8467,
+      "low": 68.1933,
+      "close": 68.7167,
+      "volume": 21014,
+      "barCount": 4712,
+      "wap": 68.681
+    },
+    {
+      "date": "2026-10-21 00:00:00+00:00",
+      "open": 69.0233,
+      "high": 69.77,
+      "low": 68.0167,
+      "close": 68.5967,
+      "volume": 20435,
+      "barCount": 4062,
+      "wap": 68.73233333
+    },
+    {
+      "date": "2026-10-22 00:00:00+00:00",
+      "open": 68.17,
+      "high": 68.8433,
+      "low": 67.2633,
+      "close": 68.16,
+      "volume": 17717,
+      "barCount": 3592,
+      "wap": 67.92133333
+    },
+    {
+      "date": "2026-10-23 00:00:00+00:00",
+      "open": 67.2,
+      "high": 67.7067,
+      "low": 65.7867,
+      "close": 67.41,
+      "volume": 17679,
+      "barCount": 3574,
+      "wap": 67.128
+    },
+    {
+      "date": "2026-10-26 00:00:00+00:00",
+      "open": 67.6467,
+      "high": 69.06,
+      "low": 67.6467,
+      "close": 69.0533,
+      "volume": 19589,
+      "barCount": 3976,
+      "wap": 68.746
+    },
+    {
+      "date": "2026-10-27 00:00:00+00:00",
+      "open": 69.04,
+      "high": 69.26,
+      "low": 68.2867,
+      "close": 68.74,
+      "volume": 19317,
+      "barCount": 3915,
+      "wap": 68.80733333
+    },
+    {
+      "date": "2026-10-28 00:00:00+00:00",
+      "open": 68.6833,
+      "high": 69.5033,
+      "low": 68.3333,
+      "close": 69.2467,
+      "volume": 14455,
+      "barCount": 2874,
+      "wap": 68.98566667
+    },
+    {
+      "date": "2026-10-29 00:00:00+00:00",
+      "open": 69.71,
+      "high": 71.92,
+      "low": 69.71,
+      "close": 71.4333,
+      "volume": 22764,
+      "barCount": 4593,
+      "wap": 71.196
+    },
+    {
+      "date": "2026-10-30 00:00:00+00:00",
+      "open": 71.3333,
+      "high": 71.8667,
+      "low": 69.5633,
+      "close": 69.9133,
+      "volume": 24436,
+      "barCount": 5272,
+      "wap": 70.45533333
+    },
+    {
+      "date": "2026-11-02 00:00:00+00:00",
+      "open": 70.69,
+      "high": 71.8967,
+      "low": 70.6033,
+      "close": 71.56,
+      "volume": 21679,
+      "barCount": 4145,
+      "wap": 71.46866667
+    },
+    {
+      "date": "2026-11-03 00:00:00+00:00",
+      "open": 71.6233,
+      "high": 72.9167,
+      "low": 71.59,
+      "close": 72.0567,
+      "volume": 20229,
+      "barCount": 4063,
+      "wap": 72.271
+    },
+    {
+      "date": "2026-11-04 00:00:00+00:00",
+      "open": 71.81,
+      "high": 72.4367,
+      "low": 69.8933,
+      "close": 70.9467,
+      "volume": 25109,
+      "barCount": 4524,
+      "wap": 71.033
+    },
+    {
+      "date": "2026-11-05 00:00:00+00:00",
+      "open": 70.43,
+      "high": 71.3,
+      "low": 67.56,
+      "close": 68.11,
+      "volume": 23212,
+      "barCount": 11659,
+      "wap": 68.66
+    },
+    {
+      "date": "2026-11-06 00:00:00+00:00",
+      "open": 67.84,
+      "high": 69.36,
+      "low": 67.15,
+      "close": 68.98,
+      "volume": 16421,
+      "barCount": 7527,
+      "wap": 68.846
+    },
+    {
+      "date": "2026-11-09 00:00:00+00:00",
+      "open": 70.35,
+      "high": 72.05,
+      "low": 69.94,
+      "close": 71.67,
+      "volume": 16414,
+      "barCount": 7226,
+      "wap": 71.445
+    },
+    {
+      "date": "2026-11-10 00:00:00+00:00",
+      "open": 71.05,
+      "high": 72.61,
+      "low": 70.97,
+      "close": 72.35,
+      "volume": 12716,
+      "barCount": 5425,
+      "wap": 72.124
+    },
+    {
+      "date": "2026-11-11 00:00:00+00:00",
+      "open": 72.39,
+      "high": 73.36,
+      "low": 72.12,
+      "close": 73.24,
+      "volume": 10100,
+      "barCount": 5502,
+      "wap": 72.994
+    },
+    {
+      "date": "2026-11-12 00:00:00+00:00",
+      "open": 73.13,
+      "high": 73.58,
+      "low": 71.58,
+      "close": 71.73,
+      "volume": 23874,
+      "barCount": 11341,
+      "wap": 72.185
+    },
+    {
+      "date": "2026-11-13 00:00:00+00:00",
+      "open": 71.92,
+      "high": 72.18,
+      "low": 70.76,
+      "close": 71.51,
+      "volume": 13097,
+      "barCount": 6013,
+      "wap": 71.316
+    }
+  ]
+}

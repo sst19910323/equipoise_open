@@ -1,0 +1,5 @@
+# Offline regression tests and optional drill/browser acceptance tools.
+-r requirements.txt
+pytest
+paramiko
+playwright
