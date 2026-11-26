@@ -32,7 +32,9 @@ The planned setup experience is to let **Codex or Claude Code initialize the pro
 
 ![Two advocates, an arbiter, and a neutral research workbench sharing evidence](images/hearing-research-en.png)
 
-The advocates can argue, but they can also send work out: fetch a missing fact, compare real peers, or run a model workflow. The result comes back into the hearing—even when it helps the other side. A group can share that investigation while each asset receives its own report.
+Optimism and profit-taking realism each get room to build a full case. The exchange has two jobs: **resolve disagreements that evidence can settle, and discover questions neither side asked at the opening**. A challenge can expose a missing fact, a weak assumption, or a model worth running. The remaining uncertainty stays visible; agreement is not a requirement.
+
+Those questions become research tasks: fetch the fact, compare real peers, or execute a model workflow. Findings return to the hearing—even when they help the other side. Arbiter judges the arguments after that exchange. A group can share the investigation while each asset receives its own report.
 
 <details>
 <summary>Open the system map</summary>
@@ -180,11 +182,11 @@ A separate portfolio layer is therefore being explored: a capable AI would read 
 
 ### Natural layers
 
-Evidence, judgment, plan formulation, evaluation, and scheduling belong in the layers suited to their jobs. Clear responsibilities and interfaces let each layer evolve without absorbing the others.
+Evidence, judgment, plan formulation, evaluation, and scheduling belong in the layers suited to their jobs. Debaters understand a tool's purpose, when to call it, and what its result means; neutral executors and code handle the detailed workflow and calculations. Each layer can develop without expanding every agent's instructions.
 
 ### Thin yet sturdy
 
-Use a compact set of skills (reusable instruction modules) and remove redundant machinery while aiming to cover market mechanisms and models without leaving important analytical angles out. Simplicity must preserve the analytical capabilities needed across different situations, with gaps actively sought and repaired.
+Cover the market's major analytical dimensions with a compact set of complementary explanations and quantitative models. Strengthen each mechanism's reasoning and coverage, and repair gaps, before adding another overlapping rule. Local models provide reference points within their scope; LLM reasoning connects their findings into a broader market view. The aim is wider coverage with a manageable set of skills (reusable instruction modules).
 
 ### Symmetric standards
 
@@ -196,7 +198,7 @@ Rules combine plain-language explanations with quantitative formulas or models. 
 
 ## Further reading
 
-[Design Philosophy](docs/design-philosophy.md) contains the longer reasoning, experiments, and stories behind the design; that public document is also being brought up to date. The [gallery](docs/screenshots.md) shows the current interface, [README-v1](README-v1.md) documents the archived implementation, and [Archive & easter eggs](#easter-eggs) collects earlier milestones.
+[Design Philosophy](docs/design-philosophy.md) is an ongoing series of short field notes: discoveries, experiments, and stories behind the design. The [gallery](docs/screenshots.md) shows the current interface, [README-v1](README-v1.md) documents the archived implementation, and [Archive & easter eggs](#easter-eggs) collects earlier milestones.
 
 ---
 
@@ -232,7 +234,9 @@ Equipoise 是一个基于大语言模型的量化市场研究框架。参与判�
 
 ![对立辩手、仲裁者与中立研究工作台，共享证据](images/hearing-research-en.png)
 
-辩手可以争论，也可以把工作发出去：查缺失的事实、比较真正的同业、执行一套模型流程。结果回到听证桌上，即使它帮了对手。一组标的可以共享这场研究，同时各自得到独立报告。
+乐观主义与着眼于兑现利润的现实主义，各自有空间把论点建立完整。交锋有两个作用：**用证据消解能够解决的分歧，也发现开场时双方都没问过的问题**。一次质疑，可以暴露缺失的事实、薄弱的假设，或值得执行的模型。剩下的不确定性继续保留，不要求双方达成共识。
+
+这些问题进一步变成研究任务：查事实、比较真正的同业、执行模型流程。结果回到听证桌上，即使它帮了对手。仲裁者评判经过交锋的论证；一组标的可以共享研究，同时各自得到独立报告。
 
 <details>
 <summary>展开系统结构图</summary>
@@ -380,11 +384,11 @@ Reaper 不必预测下跌，Arbiter 也不必各打五十大板。没有依据�
 
 ### 自然成层
 
-证据、判断、方案表达、评估与调度，各自放在适合的层级。职责和接口明确，每层可以演进，不必把其他层的工作揽进来。
+证据、判断、方案表达、评估与调度，各自放在适合的层级。辩手理解工具的目的、何时调用、结果意味着什么；中立执行员与代码负责具体流程和计算。底层可以持续演进，每个 agent 的指令不必跟着一起膨胀。
 
 ### 薄而坚实
 
-用紧凑的一组 skill（可复用的指令模块）减少重复机制，同时尽可能覆盖市场机制与模型的不同侧面。精简必须保留应对不同情境所需的分析能力，并主动寻找、补齐遗漏。
+用精炼、互补的抽象解释与数学模型覆盖市场的主要分析维度。先打磨单个机制的解释力与覆盖面，寻找、补齐遗漏，再考虑增加规则。局部模型在适用范围内提供量化锚点，LLM 将这些结果组织成更完整的市场判断；目标是覆盖更广，而每个 agent 要掌握的 skill 仍然精炼。
 
 ### 对等求衡
 
@@ -396,7 +400,7 @@ Reaper 不必预测下跌，Arbiter 也不必各打五十大板。没有依据�
 
 ## 延伸阅读
 
-更深入的理由、实验与趣闻放在 [设计哲学](docs/design-philosophy.md)，这份公开文档也在继续同步。[截图画廊](docs/screenshots.md) 展示现有界面，[README-v1](README-v1.md) 则记录存档实现。
+更多发现、实验与趣闻放在 [设计哲学](docs/design-philosophy.md)：一组持续更新、前后相接的短札。[截图画廊](docs/screenshots.md) 展示现有界面，[README-v1](README-v1.md) 则记录存档实现。
 
 ---
 

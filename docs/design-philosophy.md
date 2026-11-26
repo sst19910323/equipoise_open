@@ -1,3 +1,5 @@
+<a id="english"></a>
+
 **English** | [**中文**](#中文版)
 
 # Equipoise — Field Notes from a Quant-Debate Framework
@@ -275,13 +277,29 @@ The effect was immediate: round one became 53 to 39, and Reaper had the directio
 
 That is exactly what the drill is for. Read as a statistic, this run is just "changed it, didn't get better," dismissed in one number; read round by round, you can see the good step really did happen in round one and the bad one came later. So the work has gone back to round one, to understand that single fix thoroughly before moving on. The broken bones were expected — the drill rebuilds the architecture; it doesn't tune the weights.
 
+## 🧭 Arguing toward an answer—and toward the next question
+
+Picking up the arbiter's story (⚖️): separating optimism from realism gives each room to develop. But two independent reports handed to a third AI leave that AI with the original conflict. The market usually supplies reasons for both sides; the useful work happens when each must answer the other's strongest point.
+
+The exchange has two directions. Evidence can narrow a disagreement, leaving the arbiter a better-examined choice. A challenge can also open something up: an assumption nobody checked, a missing transmission step, a new question. That is how the hearing grows beyond its opening material, and why task and evidence belong inside it.
+
+Finding those questions was hard in the early attempts (🔦); the first drill (🧪) gave it a more concrete starting point: explain the observed move, then investigate what the explanation cannot cover. The aim is to settle what can be settled and keep the real uncertainty visible. Neither convergence nor discovery comes just from assigning two personalities.
+
+## 🧰 Stronger tools, a thinner handbook
+
+The anchors story (🥋) had another turn. I initially left room for AI to depart from a model because I worried the mathematics would constrain its judgment. As some models were refined, I often found the AI had little basis for a large revision within their scope. That changed my view of the tools: a limited domain can still be worth understanding very well.
+
+So “thin yet sturdy” means improving the explanation and quantitative model for each analytical dimension, then making those mechanisms complement one another. “Don't extrapolate a trend” and “an intact trend can persist” both sound sensible; the useful question is which conditions and measurements distinguish the present case.
+
+The handbook stays thin through the division of work in 🎫. Debaters need the purpose, invocation and meaning of a tool; neutral executors and code carry the detailed procedure and arithmetic. A bigger context window does not ensure every instruction gets followed. The mathematical toolbox can deepen while the debater's working instructions remain concise—and the debate checks how those local results fit together.
+
 Questions and discussion welcome: **sst19910323@gmail.com**
 
 ---
 
 <a id="中文版"></a>
 
-[**English**](#english--中文) | **中文**
+[**English**](#english) | **中文**
 
 # Equipoise 趣闻 · 一个量化辩论框架的踩坑笔记
 
@@ -556,5 +574,21 @@ LLM 天生爱妥协。我见过不少别家的分层 AI 投研，套路大同小
 这恰恰是演习的意义。要是只看统计，这一期就是"改了，没变好"，一个数字就打发了；逐回合看下来，才看得清好的那一步确实发生在第一回合，坏的那一步发生在后面。所以现在退回到第一回合，先把这一处修复本身研究透，再往下走。伤筋动骨在意料之中——演习本来就是在改网络结构，不是在调权重。
 
 ---
+
+## 🧭 吵出答案，也吵出下一个问题
+
+接着仲裁者那条（⚖️）往下想：把乐观主义与现实主义分开，各自终于能把道理讲完整。可要是各写一份报告，再交给第三个 AI 综合，原来的矛盾其实还在那里。市场里多空理由总找得到，真正要紧的是双方得回答对方最有分量的那一句。
+
+交锋于是有两个方向：证据把能解决的分歧收窄，让仲裁面对经过检查的选择；质疑又把问题打开，逼出没查过的假设、没讲通的传导。Task 和 evidence 就从这里长出来，让研究越过开场那包材料。
+
+早先“找出新问题”一直很难（🔦），第一期演习（🧪）才找到一个更具体的起点：先解释眼前的走势，再查解释不通的地方。能解决的解决，真正的不确定性留下。收敛与发现，都得有机制支撑，光分两个人格还不够。
+
+## 🧰 工具箱更强，秘籍不必更厚
+
+锚点那条（🥋）后来还有个转折。起初允许 AI 偏离数学模型，是怕公式束缚它；可有些模型逐渐打磨好后，在适用范围内，AI 往往也提不出有依据的大改意见。这让我重新认识了局部模型的价值：管得窄，也可以把这一块管得很扎实。
+
+所以“薄而坚实”，是把每个维度的解释和模型磨好，再让它们互补。“趋势不能外推”和“趋势尚可延续”都像道理，得有条件与量化参照，才知道眼下更接近哪一种。
+
+秘籍怎么薄下来，接的是工作单那条（🎫）：辩手掌握目的、调用方式和结果含义，具体流程交给中立执行员，算术交给代码。上下文再大，也不等于每条指令都会被执行。底层工具可以继续长本事，辩手随身的秘籍仍然精炼，再靠交锋检查这些局部结果能否拼成完整判断。
 
 欢迎来信探讨：**sst19910323@gmail.com**
